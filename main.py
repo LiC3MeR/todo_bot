@@ -27,7 +27,7 @@ def index():
         customer = request.form['customer']  # Добавлено поле "Заказчик"'
 
         # Добавление имени заказчика в описание задачи
-        task_description = f"{description}\n\nCustomer: {customer}"
+        task_description = f"{description}\n\nЗаказчик: {customer}"
 
         try:
             task = api.add_task(
@@ -41,6 +41,8 @@ def index():
             send_telegram_message(f"Новая задача: {task_content}")
             return jsonify({"message": "Задача успешно добавлена"})
         except Exception as error:
+            # Логирование ошибки
+            print("Error sending Telegram message:", error)
             return jsonify({"error": str(error)})
     else:
         try:
