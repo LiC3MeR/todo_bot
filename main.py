@@ -6,8 +6,8 @@ app = Flask(__name__)
 api = TodoistAPI("376f6ca4763413e176fd2a0eadd30af37f44cbea")
 
 # Настройки телеграм бота
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID"
+TELEGRAM_BOT_TOKEN = "6978569386:AAHPFeCfyfPDCrZS_HfvT6i5oP8cnBfP-b4"
+TELEGRAM_CHAT_ID = "1212068138"
 
 # Создание экземпляра бота
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
@@ -75,4 +75,4 @@ def get_tasks():
         return jsonify({"error": str(error)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=443, ssl_context='adhoc')
+    app.run(host='0.0.0.0', port=80)
