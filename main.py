@@ -7,7 +7,7 @@ api = TodoistAPI("376f6ca4763413e176fd2a0eadd30af37f44cbea")
 
 # Настройки телеграм бота
 TELEGRAM_BOT_TOKEN = "6978569386:AAHPFeCfyfPDCrZS_HfvT6i5oP8cnBfP-b4"
-TELEGRAM_CHAT_ID = "1212068138"
+TELEGRAM_CHAT_ID = "-4268092733"
 
 # Создание экземпляра бота
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
