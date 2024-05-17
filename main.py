@@ -125,4 +125,4 @@ def get_tasks():
         return jsonify({"error": str(error)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port='80')
