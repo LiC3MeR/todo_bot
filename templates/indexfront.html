@@ -40,6 +40,13 @@ button:hover {
 <div>
     <footer>Alex debil</footer>
 </div>
+        <h2>Текущие задачи</h2>
+        <ul id="task-list">
+            {% for task in tasks %}
+                <li>{{ task.content }} - {{ task.status }}</li>
+            {% endfor %}
+        </ul>
+<script src="main.js"></script>
 
 </body>
 </html>

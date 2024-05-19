@@ -94,7 +94,7 @@ def index():
     else:
         try:
             tasks = api.get_tasks(project_id=2322606786)
-            return render_template('index.html', tasks=tasks)
+            return render_template('indexfront.html', tasks=tasks)
         except Exception as error:
             print("Error fetching tasks:", error)
             return jsonify({"error": str(error)})
@@ -125,4 +125,4 @@ def get_tasks():
         return jsonify({"error": str(error)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='80')
+    app.run(host='0.0.0.0')
