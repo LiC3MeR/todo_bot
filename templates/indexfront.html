@@ -47,11 +47,14 @@ button:hover {
             {% endfor %}
         </ul>
 <script>
-        function updateTaskList() {
+document.addEventListener('DOMContentLoaded', function() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const taskList = document.getElementById('task-list');
+    function updateTaskList() {
         fetch('/tasks')
             .then(response => response.json())
             .then(data => {
-                taskList.innerHTML = ''; // Очистить текущий список задач
+                taskList.innerHTML = '';
                 data.tasks.forEach(task => {
                     const li = document.createElement('li');
                     li.textContent = `${task.content} - ${task.status}`;
@@ -60,10 +63,25 @@ button:hover {
             })
             .catch(error => console.error('Error updating task list:', error));
     }
-
-    updateTaskList(); // Обновить список задач при загрузке страницы
-
-    setInterval(updateTaskList, 30000); // Обновлять список задач каждые 30 секунд
+    updateTaskList();
+    setInterval(updateTaskList, 30000);
+    const taskForm = document.querySelector('form');
+    taskForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(taskForm);
+        fetch('/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            updateTaskList();
+            taskForm.reset();
+        })
+        .catch(error => console.error('Error adding task:', error));
+    });
+});
 </script>
 
 
