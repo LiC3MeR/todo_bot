@@ -155,17 +155,17 @@ def update_task_status():
 
         new_section_id = section_status_mapping.get(new_status)
         if new_section_id is None:
-            return jsonify({"error": "Invalid status"})
+            return jsonify({"error": "Неизвестный статус"})
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
-            return jsonify({"error": "Task not found"})
+            return jsonify({"error": "Задача не найдена"})
 
         task.section_id = new_section_id
         db.session.commit()
-        return jsonify({"message": "Task status updated successfully"})
+        return jsonify({"message": "Статус задачи обновлён"})
     except Exception as error:
-        print("Error updating task status:", error)
+        print("Обшибка обновления статуса:", error)
         return jsonify({"error": str(error)})
 
 if __name__ == '__main__':
