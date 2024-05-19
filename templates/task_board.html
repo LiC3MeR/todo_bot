@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Доска задач</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .column {
+            width: 30%;
+            display: inline-block;
+            vertical-align: top;
+            margin: 10px;
+            padding: 10px;
+            background-color: #1e1e1e;
+            border-radius: 5px;
+        }
+        .task {
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #2e2e2e;
+            border-radius: 5px;
+        }
+        .task h5 {
+            margin: 0;
+            color: #fff;
+        }
+        .task p {
+            margin: 5px 0 0;
+            color: #bbb;
+        }
+        .task-board {
+            display: flex;
+            justify-content: space-around;
+        }
+        .task-form {
+            margin-bottom: 20px;
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center my-4">Доска задач</h1>
+
+        <div class="task-form">
+            <h4>Создать новую задачу</h4>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="task_content">Содержание задачи</label>
+                    <input type="text" class="form-control bg-dark text-light" id="task_content" required>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Приоритет</label>
+                    <input type="text" class="form-control bg-dark text-light" id="priority" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Описание</label>
+                    <textarea class="form-control bg-dark text-light" id="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="customer">Заказчик</label>
+                    <input type="text" class="form-control bg-dark text-light" id="customer" required>
+                </div>
+                <div class="form-group">
+                    <label for="department">Отдел</label>
+                    <input type="text" class="form-control bg-dark text-light" id="department" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Создать задачу</button>
+            </form>
+        </div>
+
+        <div class="task-board">
+            <div class="column" id="queue">
+                <h2 class="text-center text-light">В очереди</h2>
+                {% for task in tasks_by_section['В очереди'] %}
+                <div class="task" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="column" id="in-progress">
+                <h2 class="text-center text-light">В работе</h2>
+                {% for task in tasks_by_section['В работе'] %}
+                <div class="task" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="column" id="done">
+                <h2 class="text-center text-light">Готово</h2>
+                {% for task in tasks_by_section['Готово'] %}
+                <div class="task" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateTaskStatus(taskId, newStatus) {
+            fetch('/update_task_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ task_id: taskId, status: newStatus })
+            }).then(response => response.json()).then(data => {
+                if (data.error) {
+                    alert("Ошибка при обновлении статуса задачи: " + data.error);
+                }
+            }).catch(error => {
+                alert("Ошибка при обновлении статуса задачи: " + error);
+            });
+        }
+
+        function addTaskToColumn(taskId, content, description, columnId) {
+            const taskDiv = document.createElement('div');
+            taskDiv.className = 'task';
+            taskDiv.setAttribute('data-id', taskId);
+            taskDiv.innerHTML = `<h5>${content}</h5><p>${description}</p>`;
+            document.getElementById(columnId).appendChild(taskDiv);
+        }
+
+        document.getElementById('taskForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const taskContent = document.getElementById('task_content').value;
+            const priority = document.getElementById('priority').value;
+            const description = document.getElementById('description').value;
+            const customer = document.getElementById('customer').value;
+            const department = document.getElementById('department').value;
+
+            fetch('/create_task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    task_content: taskContent,
+                    priority: priority,
+                    description: description,
+                    customer: customer,
+                    department: department
+                })
+            }).then(response => response.json()).then(data => {
+                if (data.error) {
+                    alert("Ошибка при создании задачи: " + data.error);
+                } else {
+                    addTaskToColumn(data.task_id, data.content, description, 'queue');
+                    document.getElementById('taskForm').reset();
+                }
+            }).catch(error => {
+                alert("Ошибка при создании задачи: " + error);
+            });
+        });
+
+        var queueSortable = new Sortable(document.getElementById('queue'), {
+            group: 'tasks',
+            onAdd: function (evt) {
+                updateTaskStatus(evt.item.getAttribute('data-id'), 'В очереди');
+            }
+        });
+
+        var inProgressSortable = new Sortable(document.getElementById('in-progress'), {
+            group: 'tasks',
+            onAdd: function (evt) {
+                updateTaskStatus(evt.item.getAttribute('data-id'), 'В работе');
+            }
+        });
+
+        var doneSortable = new Sortable(document.getElementById('done'), {
+            group: 'tasks',
+            onAdd: function (evt) {
+                updateTaskStatus(evt.item.getAttribute('data-id'), 'Готово');
+            }
+        });
+    </script>
+</body>
+</html>

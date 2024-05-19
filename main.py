@@ -150,9 +150,9 @@ def update_task_status():
 
         # Mapping for status names to section IDs
         section_status_mapping = {
-            '155860104': 155860104,
-            '155859386': 155859386,
-            '138005323': 138005323
+            'В очереди': 155860104,
+            'В работе': 155859386,
+            'Готово': 138005323
         }
 
         # Determine the new section ID based on the status provided
@@ -161,21 +161,75 @@ def update_task_status():
         elif isinstance(new_status, int):
             new_section_id = new_status
         else:
-            return jsonify({"error": "Не известный формат статса"})
+            return jsonify({"error": "Invalid status format"})
 
         if new_section_id is None:
-            return jsonify({"error": "Неизвестный статус"})
+            return jsonify({"error": "Invalid status"})
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
-            return jsonify({"error": "Задача не найдена"})
+            return jsonify({"error": "Task not found"})
 
         task.section_id = new_section_id
         db.session.commit()
-        return jsonify({"message": "Задача успешно обновена"})
+        return jsonify({"message": "Task status updated successfully"})
     except Exception as error:
         print("Error updating task status:", error)
         return jsonify({"error": str(error)})
+
+@app.route('/task_board')
+def task_board():
+    try:
+        tasks = Task.query.all()
+        section_status_mapping = {
+            155860104: 'В очереди',
+            155859386: 'В работе',
+            138005323: 'Готово'
+        }
+        tasks_by_section = {
+            'В очереди': [],
+            'В работе': [],
+            'Готово': []
+        }
+        for task in tasks:
+            status = section_status_mapping.get(task.section_id, 'Статус неизвестен')
+            if status in tasks_by_section:
+                tasks_by_section[status].append(task)
+
+        return render_template('task_board.html', tasks_by_section=tasks_by_section)
+    except Exception as error:
+        print("Error fetching tasks:", error)
+        return jsonify({"error": str(error)})
+
+@app.route('/create_task', methods=['POST'])
+def create_task():
+    try:
+        task_content = request.json['task_content']
+        priority = int(request.json['priority'])
+        description = request.json['description']
+        customer = request.json['customer']
+        department = request.json['department']
+        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
+
+        unique_id = generate_unique_id()
+        task_content_with_id = f"{unique_id}: {task_content}"
+
+        new_task = Task(
+            task_id=unique_id,
+            content=task_content_with_id,
+            priority=priority,
+            description=task_description,
+            project_id=2322606786,
+            section_id=155860104  # Default to "В очереди"
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        send_telegram_message(f"Новая задача: {task_content_with_id}")
+        return jsonify({"message": "Задача успешно добавлена", "task_id": unique_id, "content": task_content_with_id})
+    except Exception as error:
+        print("Error creating task:", error)
+        return jsonify({"error": str(error)})
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
