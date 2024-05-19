@@ -45,15 +45,15 @@ def send_telegram_message(message):
 def generate_unique_id():
     try:
         last_task = Task.query.order_by(Task.id.desc()).first()
-        if last_task and last_task.task_id.startswith("SYS-"):
+        if last_task and last_task.task_id.startswith("DEV-"):
             last_id_number = int(last_task.task_id.split('-')[1])
             new_id_number = last_id_number + 1
         else:
             new_id_number = 1
-        return f"SYS-{new_id_number}"
+        return f"DEV-{new_id_number}"
     except Exception as e:
         print("Error generating unique ID:", e)
-        return "SYS-1"  # Fallback to "SYS-1" if there's an error
+        return "DEV-1"
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -229,6 +229,49 @@ def create_task():
     except Exception as error:
         print("Error creating task:", error)
         return jsonify({"error": str(error)})
+
+@app.route('/delete_task', methods=['POST'])
+def delete_task():
+    try:
+        task_id = request.form.get('task_id')
+        if not task_id:
+            return jsonify({"error": "Task ID is required"}), 400
+
+        task = Task.query.filter_by(task_id=task_id).first()
+        if task is None:
+            return jsonify({"error": "Task not found"}), 404
+
+        db.session.delete(task)
+        db.session.commit()
+        send_telegram_message(f"Задача удалена: {task.content}")
+        return jsonify({"message": "Task deleted successfully"})
+    except Exception as error:
+        print("Error deleting task:", error)
+        return jsonify({"error": str(error)}), 500
+
+@app.route('/delete_tasks', methods=['POST'])
+def delete_tasks():
+    try:
+        task_ids = request.form.getlist('task_ids[]')  # Используем getlist для получения всех значений с одним именем
+        if task_ids:
+            Task.query.filter(Task.task_id.in_(task_ids)).delete(synchronize_session='fetch')
+            db.session.commit()
+            for task_id in task_ids:
+                send_telegram_message(f"Задача удалена: {task_id}")
+            return jsonify({"message": "Tasks successfully deleted"})
+        else:
+            return jsonify({"error": "No tasks selected"}), 400
+    except Exception as error:
+        print("Error deleting tasks:", error)
+        return jsonify({"error": str(error)}), 500
+
+
+
+@app.route('/show_delete_task')
+def show_delete_task():
+    tasks = Task.query.all()
+    return render_template('delete_task.html', tasks=tasks)
+
 
 
 if __name__ == '__main__':
