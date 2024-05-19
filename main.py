@@ -11,13 +11,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///base.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-api = TodoistAPI("376f6ca4763413e176fd2a0eadd30af37f44cbea")
+# Настройки Todoist API и Telegram бота из переменных окружения
+TODOIST_API_KEY = os.getenv("TODOIST_API_KEY", "376f6ca4763413e176fd2a0eadd30af37f44cbea")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7P0dBDFvUj1wPlxPWVsH0")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "-1002075733635")
 
-# Настройки телеграм бота
-TELEGRAM_BOT_TOKEN = "6734859669:AAFPaSB8FwPPXS7P0dBDFvUj1wPlxPWVsH0"
-TELEGRAM_CHAT_ID = "-1002075733635"
-
-# Создание экземпляра бота
+api = TodoistAPI(TODOIST_API_KEY)
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
 
 # Define a Task model
@@ -61,6 +60,46 @@ def generate_unique_id():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    if request.method == 'POST':
+        task_content = request.form['task_content']
+        priority = int(request.form['priority'])
+        description = request.form['description']
+        customer = request.form['customer']  # Добавлено поле "Заказчик"
+        department = request.form['department']
+        # Добавление имени заказчика в описание задачи
+        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
+
+        try:
+            unique_id = generate_unique_id()
+            task_content_with_id = f"{unique_id}: {task_content}"
+            task = api.add_task(
+                content=task_content_with_id,
+                priority=priority,
+                description=task_description,  # Используем обновленное описание задачи
+                project_id=2322606786,
+                section_id=155860104,
+            )
+            # Save the task in the local database with a unique task_id
+            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, section_id=155860104)
+            db.session.add(new_task)
+            db.session.commit()
+            # Отправка уведомления в телеграм
+            send_telegram_message(f"Новая задача: {task_content_with_id}")
+            return jsonify({"message": "Задача успешно добавлена"})
+        except Exception as error:
+            # Логирование ошибки
+            print("Error adding task:", error)
+            return jsonify({"error": str(error)})
+    else:
+        try:
+            tasks = api.get_tasks(project_id=2322606786)
+            return render_template('index.html', tasks=tasks)
+        except Exception as error:
+            print("Error fetching tasks:", error)
+            return jsonify({"error": str(error)})
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
     if request.method == 'POST':
         task_content = request.form['task_content']
         priority = int(request.form['priority'])
