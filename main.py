@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-from todoist_api_python.api import TodoistAPI
 from flask_sqlalchemy import SQLAlchemy
 from telebot import TeleBot
 import os
@@ -11,12 +10,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///base.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Настройки Todoist API и Telegram бота из переменных окружения
-TODOIST_API_KEY = os.getenv("TODOIST_API_KEY", "376f6ca4763413e176fd2a0eadd30af37f44cbea")
+# Настройки Telegram бота из переменных окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7P0dBDFvUj1wPlxPWVsH0")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "-1002075733635")
 
-api = TodoistAPI(TODOIST_API_KEY)
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
 
 # Define a Task model
@@ -72,13 +69,6 @@ def index():
         try:
             unique_id = generate_unique_id()
             task_content_with_id = f"{unique_id}: {task_content}"
-            task = api.add_task(
-                content=task_content_with_id,
-                priority=priority,
-                description=task_description,  # Используем обновленное описание задачи
-                project_id=2322606786,
-                section_id=155860104,
-            )
             # Save the task in the local database with a unique task_id
             new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, section_id=155860104)
             db.session.add(new_task)
@@ -92,7 +82,7 @@ def index():
             return jsonify({"error": str(error)})
     else:
         try:
-            tasks = api.get_tasks(project_id=2322606786)
+            tasks = Task.query.all()
             return render_template('index.html', tasks=tasks)
         except Exception as error:
             print("Error fetching tasks:", error)
@@ -112,13 +102,6 @@ def admin():
         try:
             unique_id = generate_unique_id()
             task_content_with_id = f"{unique_id}: {task_content}"
-            task = api.add_task(
-                content=task_content_with_id,
-                priority=priority,
-                description=task_description,  # Используем обновленное описание задачи
-                project_id=2322606786,
-                section_id=155860104,
-            )
             # Save the task in the local database with a unique task_id
             new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, section_id=155860104)
             db.session.add(new_task)
@@ -132,7 +115,7 @@ def admin():
             return jsonify({"error": str(error)})
     else:
         try:
-            tasks = api.get_tasks(project_id=2322606786)
+            tasks = Task.query.all()
             return render_template('indexfront.html', tasks=tasks)
         except Exception as error:
             print("Error fetching tasks:", error)
@@ -141,26 +124,48 @@ def admin():
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
     try:
-        tasks = api.get_tasks(project_id=2322606786)
+        tasks = Task.query.all()
         task_list = []
         for task in tasks:
             section_status_mapping = {
-                '155860104': 'В очереди',
-                '155859386': 'В работе',
-                '138005323': 'Готово'
+                155860104: 'В очереди',
+                155859386: 'В работе',
+                138005323: 'Готово'
             }
 
             section_id = task.section_id
-            if section_id in section_status_mapping:
-                task_status = section_status_mapping[section_id]
-            else:
-                task_status = 'Статус неизвестен'
-
+            task_status = section_status_mapping.get(section_id, 'Статус неизвестен')
             task_list.append({"content": task.content, "status": task_status})
 
         return jsonify({"tasks": task_list})
     except Exception as error:
         print("Error fetching tasks:", error)
+        return jsonify({"error": str(error)})
+
+@app.route('/update_task_status', methods=['POST'])
+def update_task_status():
+    try:
+        task_id = request.json['task_id']
+        new_status = request.json['status']
+        section_status_mapping = {
+            'В очереди': 155860104,
+            'В работе': 155859386,
+            'Готово': 138005323
+        }
+
+        new_section_id = section_status_mapping.get(new_status)
+        if new_section_id is None:
+            return jsonify({"error": "Invalid status"})
+
+        task = Task.query.filter_by(task_id=task_id).first()
+        if task is None:
+            return jsonify({"error": "Task not found"})
+
+        task.section_id = new_section_id
+        db.session.commit()
+        return jsonify({"message": "Task status updated successfully"})
+    except Exception as error:
+        print("Error updating task status:", error)
         return jsonify({"error": str(error)})
 
 if __name__ == '__main__':
