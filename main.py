@@ -147,13 +147,22 @@ def update_task_status():
     try:
         task_id = request.json['task_id']
         new_status = request.json['status']
+
+        # Mapping for status names to section IDs
         section_status_mapping = {
-            'В очереди': 155860104,
-            'В работе': 155859386,
-            'Готово': 138005323
+            '155860104': 155860104,
+            '155859386': 155859386,
+            '138005323': 138005323
         }
 
-        new_section_id = section_status_mapping.get(new_status)
+        # Determine the new section ID based on the status provided
+        if isinstance(new_status, str):
+            new_section_id = section_status_mapping.get(new_status)
+        elif isinstance(new_status, int):
+            new_section_id = new_status
+        else:
+            return jsonify({"error": "Не известный формат статса"})
+
         if new_section_id is None:
             return jsonify({"error": "Неизвестный статус"})
 
@@ -163,9 +172,9 @@ def update_task_status():
 
         task.section_id = new_section_id
         db.session.commit()
-        return jsonify({"message": "Статус задачи обновлён"})
+        return jsonify({"message": "Задача успешно обновена"})
     except Exception as error:
-        print("Обшибка обновления статуса:", error)
+        print("Error updating task status:", error)
         return jsonify({"error": str(error)})
 
 if __name__ == '__main__':
