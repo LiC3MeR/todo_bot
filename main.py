@@ -45,15 +45,15 @@ def send_telegram_message(message):
 def generate_unique_id():
     try:
         last_task = Task.query.order_by(Task.id.desc()).first()
-        if last_task and last_task.task_id.startswith("SYS-"):
+        if last_task and last_task.task_id.startswith("DEV-"):
             last_id_number = int(last_task.task_id.split('-')[1])
             new_id_number = last_id_number + 1
         else:
             new_id_number = 1
-        return f"SYS-{new_id_number}"
+        return f"DEV-{new_id_number}"
     except Exception as e:
         print("Error generating unique ID:", e)
-        return "SYS-1"  # Fallback to "SYS-1" if there's an error
+        return "DEV-1"
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -150,9 +150,9 @@ def update_task_status():
 
         # Mapping for status names to section IDs
         section_status_mapping = {
-            '155860104': 155860104,
-            '155859386': 155859386,
-            '138005323': 138005323
+            'В очереди': 155860104,
+            'В работе': 155859386,
+            'Готово': 138005323
         }
 
         # Determine the new section ID based on the status provided
@@ -161,21 +161,118 @@ def update_task_status():
         elif isinstance(new_status, int):
             new_section_id = new_status
         else:
-            return jsonify({"error": "Не известный формат статса"})
+            return jsonify({"error": "Invalid status format"})
 
         if new_section_id is None:
-            return jsonify({"error": "Неизвестный статус"})
+            return jsonify({"error": "Invalid status"})
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
-            return jsonify({"error": "Задача не найдена"})
+            return jsonify({"error": "Task not found"})
 
         task.section_id = new_section_id
         db.session.commit()
-        return jsonify({"message": "Задача успешно обновена"})
+        return jsonify({"message": "Task status updated successfully"})
     except Exception as error:
         print("Error updating task status:", error)
         return jsonify({"error": str(error)})
 
+@app.route('/task_board')
+def task_board():
+    try:
+        tasks = Task.query.all()
+        section_status_mapping = {
+            155860104: 'В очереди',
+            155859386: 'В работе',
+            138005323: 'Готово'
+        }
+        tasks_by_section = {
+            'В очереди': [],
+            'В работе': [],
+            'Готово': []
+        }
+        for task in tasks:
+            status = section_status_mapping.get(task.section_id, 'Статус неизвестен')
+            if status in tasks_by_section:
+                tasks_by_section[status].append(task)
+
+        return render_template('task_board.html', tasks_by_section=tasks_by_section)
+    except Exception as error:
+        print("Error fetching tasks:", error)
+        return jsonify({"error": str(error)})
+
+@app.route('/create_task', methods=['POST'])
+def create_task():
+    try:
+        task_content = request.json['task_content']
+        priority = int(request.json['priority'])
+        description = request.json['description']
+        customer = request.json['customer']
+        department = request.json['department']
+        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
+
+        unique_id = generate_unique_id()
+        task_content_with_id = f"{unique_id}: {task_content}"
+
+        new_task = Task(
+            task_id=unique_id,
+            content=task_content_with_id,
+            priority=priority,
+            description=task_description,
+            project_id=2322606786,
+            section_id=155860104  # Default to "В очереди"
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        send_telegram_message(f"Новая задача: {task_content_with_id}")
+        return jsonify({"message": "Задача успешно добавлена", "task_id": unique_id, "content": task_content_with_id})
+    except Exception as error:
+        print("Error creating task:", error)
+        return jsonify({"error": str(error)})
+
+@app.route('/delete_task', methods=['POST'])
+def delete_task():
+    try:
+        task_id = request.form.get('task_id')
+        if not task_id:
+            return jsonify({"error": "Task ID is required"}), 400
+
+        task = Task.query.filter_by(task_id=task_id).first()
+        if task is None:
+            return jsonify({"error": "Task not found"}), 404
+
+        db.session.delete(task)
+        db.session.commit()
+        send_telegram_message(f"Задача удалена: {task.content}")
+        return jsonify({"message": "Task deleted successfully"})
+    except Exception as error:
+        print("Error deleting task:", error)
+        return jsonify({"error": str(error)}), 500
+
+@app.route('/delete_tasks', methods=['POST'])
+def delete_tasks():
+    try:
+        task_ids = request.form.getlist('task_ids[]')  # Используем getlist для получения всех значений с одним именем
+        if task_ids:
+            Task.query.filter(Task.task_id.in_(task_ids)).delete(synchronize_session='fetch')
+            db.session.commit()
+            for task_id in task_ids:
+                send_telegram_message(f"Задача удалена: {task_id}")
+            return jsonify({"message": "Tasks successfully deleted"})
+        else:
+            return jsonify({"error": "No tasks selected"}), 400
+    except Exception as error:
+        print("Error deleting tasks:", error)
+        return jsonify({"error": str(error)}), 500
+
+
+
+@app.route('/show_delete_task')
+def show_delete_task():
+    tasks = Task.query.all()
+    return render_template('delete_task.html', tasks=tasks)
+
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port='777')
