@@ -143,6 +143,7 @@ def get_tasks():
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
 
+
 @app.route('/update_task_status', methods=['POST'])
 def update_task_status():
     try:
@@ -162,20 +163,25 @@ def update_task_status():
         elif isinstance(new_status, int):
             new_section_id = new_status
         else:
-            return jsonify({"error": "Invalid status format"})
+            return jsonify({"error": "Неизвестная ошибка"})
 
         if new_section_id is None:
-            return jsonify({"error": "Invalid status"})
+            return jsonify({"error": "Неизвестный статус"})
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
-            return jsonify({"error": "Task not found"})
+            return jsonify({"error": "Задача не найдена"})
 
+        old_status = section_status_mapping.get(task.section_id, 'Статус неизвестен')
         task.section_id = new_section_id
         db.session.commit()
-        return jsonify({"message": "Task status updated successfully"})
+
+        # Отправка уведомления в телеграм
+        send_telegram_message(f"Статус задачи {task_id} изменен с '{old_status}' на '{new_status}'")
+
+        return jsonify({"message": "Статус задачи изменён"})
     except Exception as error:
-        print("Error updating task status:", error)
+        print("Ошибка обновления статуса задачи:", error)
         return jsonify({"error": str(error)})
 
 @app.route('/task_board')
