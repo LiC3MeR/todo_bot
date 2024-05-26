@@ -84,7 +84,7 @@ def index():
     else:
         try:
             tasks = Task.query.all()
-            return render_template('indexfront.html', tasks=tasks)
+            return render_template('index.html', tasks=tasks)
         except Exception as error:
             print("Error fetching tasks:", error)
             return jsonify({"error": str(error)})
