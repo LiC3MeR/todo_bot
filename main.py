@@ -160,7 +160,7 @@ def get_tasks():
             }
 
             section_id = task.section_id
-            task_status = section_status_mapping.get(section_id, 'Статус неизвестен')
+            task_status = section_status_mapping.get(section_id, 'В очереди')
             task_list.append({"content": task.content, "status": task_status})
 
         return jsonify({"tasks": task_list})
@@ -197,7 +197,7 @@ def update_task_status():
         if task is None:
             return jsonify({"error": "Задача не найдена"})
 
-        old_status = section_status_mapping.get(task.section_id, 'Статус неизвестен')
+        old_status = section_status_mapping.get(task.section_id, 'В очереди')
         task.section_id = new_section_id
         db.session.commit()
 
@@ -224,7 +224,7 @@ def task_board():
             'Готово': []
         }
         for task in tasks:
-            status = section_status_mapping.get(task.section_id, 'Статус неизвестен')
+            status = section_status_mapping.get(task.section_id, 'В очереди')
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
