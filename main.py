@@ -26,6 +26,7 @@ class Task(db.Model):
     description = db.Column(db.String(500), nullable=False)
     project_id = db.Column(db.Integer, nullable=False)
     section_id = db.Column(db.Integer, nullable=False)
+    department = db.Column(db.String(50), nullable=False)  # New field for department
 
     def __repr__(self):
         return f'<Task {self.content}>'
@@ -56,29 +57,44 @@ def generate_unique_id():
         print("Error generating unique ID:", e)
         return "DEV-1"
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         task_content = request.form['task_content']
         priority = int(request.form['priority'])
         description = request.form['description']
-        customer = request.form['customer']  # Добавлено поле "Заказчик"
+        customer = request.form['customer']
         department = request.form['department']
-        # Добавление имени заказчика в описание задачи
-        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
+
+        # Determine department abbreviation based on input
+        if department == 'Разработка':
+            department_abbr = 'DEV'
+        elif department == 'Тестирование':
+            department_abbr = 'TEST'
+        else:
+            department_abbr = 'OTH'
+
+        # Append department abbreviation to task description
+        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department_abbr}"
 
         try:
             unique_id = generate_unique_id()
             task_content_with_id = f"{unique_id}: {task_content}"
-            # Save the task in the local database with a unique task_id
-            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, section_id=155860104)
+            new_task = Task(
+                task_id=unique_id,
+                content=task_content_with_id,
+                priority=priority,
+                description=task_description,
+                project_id=2322606786,
+                section_id=155860104,  # Assuming default section
+                department=department_abbr  # Assign department abbreviation
+            )
             db.session.add(new_task)
             db.session.commit()
-            # Отправка уведомления в телеграм
             send_telegram_message(f"Новая задача: {task_content_with_id}")
             return jsonify({"message": "Задача успешно добавлена"})
         except Exception as error:
-            # Логирование ошибки
             print("Error adding task:", error)
             return jsonify({"error": str(error)})
     else:

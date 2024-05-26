@@ -102,9 +102,10 @@
         </form>
 
         <h2>Текущие задачи</h2>
-        <ul id="task-list">
+        <ul>
             {% for task in tasks %}
-                <li>{{ task.content }} - {{ task.status }}</li>
+                <li>{{ task.content }}</li>
+                <li>Отдел: {{ task.department }}</li>
             {% endfor %}
         </ul>
     </div>
