@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 
 # Setup SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///base.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////var/log/todo/base.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -83,7 +83,7 @@ def index():
     else:
         try:
             tasks = Task.query.all()
-            return render_template('index.html', tasks=tasks)
+            return render_template('indexfront.html', tasks=tasks)
         except Exception as error:
             print("Error fetching tasks:", error)
             return jsonify({"error": str(error)})
@@ -265,7 +265,23 @@ def delete_tasks():
         print("Error deleting tasks:", error)
         return jsonify({"error": str(error)}), 500
 
-
+@app.route('/pravki', methods=['GET'])
+def run_script():
+    try:
+        # Запускаем bash-скрипт
+        result = subprocess.run(['/root/todo_bot/pravki.sh'], capture_output=True, text=True, check=True)
+        return jsonify({
+            'success': True,
+            'stdout': result.stdout,
+            'stderr': result.stderr
+        })
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'stdout': e.stdout,
+            'stderr': e.stderr
+        }), 500
 
 @app.route('/show_delete_task')
 def show_delete_task():
