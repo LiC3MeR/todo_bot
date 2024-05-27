@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from telebot import TeleBot
 import os
+import subprocess
 
 app = Flask(__name__)
 
@@ -16,7 +17,6 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "-1002075733635")
 
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
 
-# Define a Task model
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.String(80), unique=True, nullable=False)
@@ -25,6 +25,7 @@ class Task(db.Model):
     description = db.Column(db.String(500), nullable=False)
     project_id = db.Column(db.Integer, nullable=False)
     section_id = db.Column(db.Integer, nullable=False)
+    department = db.Column(db.String(50))  # Add department column
 
     def __repr__(self):
         return f'<Task {self.content}>'
@@ -42,18 +43,30 @@ def send_telegram_message(message):
     bot.send_message(TELEGRAM_CHAT_ID, message)
 
 # Функция для генерации уникального идентификатора задачи
-def generate_unique_id():
+def generate_unique_id(department):
     try:
-        last_task = Task.query.order_by(Task.id.desc()).first()
-        if last_task and last_task.task_id.startswith("DEV-"):
+        # Определение префикса в зависимости от отдела
+        if department == 'Разработка - FullStack' or department == 'Разработка - Front' or department == 'Разработка - Back':
+            prefix = 'DEV'
+        elif department == 'Тестировка':
+            prefix = 'TEST'
+        else:
+            prefix = 'OTH'
+
+        # Поиск последней задачи с таким же префиксом
+        last_task = Task.query.filter(Task.task_id.startswith(prefix)).order_by(Task.id.desc()).first()
+
+        if last_task:
             last_id_number = int(last_task.task_id.split('-')[1])
             new_id_number = last_id_number + 1
         else:
             new_id_number = 1
-        return f"DEV-{new_id_number}"
+
+        return f"{prefix}-{new_id_number}"
     except Exception as e:
         print("Error generating unique ID:", e)
-        return "DEV-1"
+        return "OTH-1"
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -61,16 +74,26 @@ def index():
         task_content = request.form['task_content']
         priority = int(request.form['priority'])
         description = request.form['description']
-        customer = request.form['customer']  # Добавлено поле "Заказчик"
+        customer = request.form['customer']
         department = request.form['department']
+
+        # Получение префикса для уникального идентификатора
+        unique_id = generate_unique_id(department)
+
         # Добавление имени заказчика в описание задачи
         task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
 
         try:
-            unique_id = generate_unique_id()
             task_content_with_id = f"{unique_id}: {task_content}"
-            # Save the task in the local database with a unique task_id
-            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, section_id=155860104)
+            # Сохранение задачи в локальной базе данных с уникальным task_id
+            new_task = Task(
+                task_id=unique_id,
+                content=task_content_with_id,
+                priority=priority,
+                description=task_description,
+                project_id=2322606786,
+                section_id=155860104  # Assuming default section
+            )
             db.session.add(new_task)
             db.session.commit()
             # Отправка уведомления в телеграм
@@ -80,13 +103,16 @@ def index():
             # Логирование ошибки
             print("Error adding task:", error)
             return jsonify({"error": str(error)})
-    else:
+    elif request.method == 'GET':
         try:
+            # Обработка GET запроса (получение данных)
             tasks = Task.query.all()
             return render_template('index.html', tasks=tasks)
         except Exception as error:
             print("Error fetching tasks:", error)
             return jsonify({"error": str(error)})
+    else:
+        return "Method Not Allowed", 405  # Обработка других методов не поддерживается
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -134,13 +160,14 @@ def get_tasks():
             }
 
             section_id = task.section_id
-            task_status = section_status_mapping.get(section_id, 'Статус неизвестен')
+            task_status = section_status_mapping.get(section_id, 'В очереди')
             task_list.append({"content": task.content, "status": task_status})
 
         return jsonify({"tasks": task_list})
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
+
 
 @app.route('/update_task_status', methods=['POST'])
 def update_task_status():
@@ -161,20 +188,25 @@ def update_task_status():
         elif isinstance(new_status, int):
             new_section_id = new_status
         else:
-            return jsonify({"error": "Invalid status format"})
+            return jsonify({"error": "Неизвестная ошибка"})
 
         if new_section_id is None:
-            return jsonify({"error": "Invalid status"})
+            return jsonify({"error": "Неизвестный статус"})
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
-            return jsonify({"error": "Task not found"})
+            return jsonify({"error": "Задача не найдена"})
 
+        old_status = section_status_mapping.get(task.section_id, 'В очереди')
         task.section_id = new_section_id
         db.session.commit()
-        return jsonify({"message": "Task status updated successfully"})
+
+        # Отправка уведомления в телеграм
+        send_telegram_message(f"Статус задачи {task_id} изменен с '{old_status}' на '{new_status}'")
+
+        return jsonify({"message": "Статус задачи изменён"})
     except Exception as error:
-        print("Error updating task status:", error)
+        print("Ошибка обновления статуса задачи:", error)
         return jsonify({"error": str(error)})
 
 @app.route('/task_board')
@@ -192,7 +224,7 @@ def task_board():
             'Готово': []
         }
         for task in tasks:
-            status = section_status_mapping.get(task.section_id, 'Статус неизвестен')
+            status = section_status_mapping.get(task.section_id, 'В очереди')
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
@@ -265,7 +297,23 @@ def delete_tasks():
         print("Error deleting tasks:", error)
         return jsonify({"error": str(error)}), 500
 
-
+@app.route('/pravki', methods=['GET'])
+def run_script():
+    try:
+        # Запускаем bash-скрипт
+        result = subprocess.run(['/root/todo_bot/pravki.sh'], capture_output=True, text=True, check=True)
+        return jsonify({
+            'success': True,
+            'stdout': result.stdout,
+            'stderr': result.stderr
+        })
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'stdout': e.stdout,
+            'stderr': e.stderr
+        }), 500
 
 @app.route('/show_delete_task')
 def show_delete_task():
@@ -275,4 +323,4 @@ def show_delete_task():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='777')
+    app.run(host='0.0.0.0')
