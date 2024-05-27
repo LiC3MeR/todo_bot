@@ -48,40 +48,6 @@ button:hover {
 
     </div>
 </div>
-<div>
-
-</div>
- <div class="task-board">
-            <div class="column" id="queue">
-                <h2 class="text-center text-light">В очереди</h2>
-                {% for task in tasks_by_section['В очереди'] %}
-                <div class="task" data-id="{{ task.task_id }}">
-                    <h5>{{ task.content }}</h5>
-                    <p>{{ task.description }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="column" id="in-progress">
-                <h2 class="text-center text-light">В работе</h2>
-                {% for task in tasks_by_section['В работе'] %}
-                <div class="task" data-id="{{ task.task_id }}">
-                    <h5>{{ task.content }}</h5>
-                    <p>{{ task.description }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="column" id="done">
-                <h2 class="text-center text-light">Готово</h2>
-                {% for task in tasks_by_section['Готово'] %}
-                <div class="task" data-id="{{ task.task_id }}">
-                    <h5>{{ task.content }}</h5>
-                    <p>{{ task.description }}</p>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const themeToggle = document.getElementById('theme-toggle');
