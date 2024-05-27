@@ -83,83 +83,61 @@ button:hover {
     </div>
 
     <script>
-        function updateTaskStatus(taskId, newStatus) {
-            fetch('/update_task_status', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ task_id: taskId, status: newStatus })
-            }).then(response => response.json()).then(data => {
-                if (data.error) {
-                    alert("Ошибка при обновлении статуса задачи: " + data.error);
-                }
-            }).catch(error => {
-                alert("Ошибка при обновлении статуса задачи: " + error);
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const taskList = document.getElementById('task-list');
+
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
             });
-        }
 
-        function addTaskToColumn(taskId, content, description, columnId) {
-            const taskDiv = document.createElement('div');
-            taskDiv.className = 'task';
-            taskDiv.setAttribute('data-id', taskId);
-            taskDiv.innerHTML = `<h5>${content}</h5><p>${description}</p>`;
-            document.getElementById(columnId).appendChild(taskDiv);
-        }
+            function updateTaskList() {
+                fetch('/tasks')
+                    .then(response => response.json())
+                    .then(data => {
+                        taskList.innerHTML = ''; // Очистить текущий список задач
+                        data.tasks.forEach(task => {
+                            const li = document.createElement('li');
+                            li.textContent = `${task.content} - ${task.status}`;
+                            taskList.appendChild(li);
+                        });
+                    })
+                    .catch(error => console.error('Error updating task list:', error));
+            }
+            // Начальная загрузка списка задач
+            updateTaskList();
 
-        document.getElementById('taskForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+            // Обновлять список задач каждые 30 секунд
+            setInterval(updateTaskList, 30000);
+            const taskForm = document.querySelector('form');
+            taskForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Предотвратить отправку формы
 
-            const taskContent = document.getElementById('task_content').value;
-            const priority = document.getElementById('priority').value;
-            const description = document.getElementById('description').value;
-            const customer = document.getElementById('customer').value;
-            const department = document.getElementById('department').value;
-
-            fetch('/create_task', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    task_content: taskContent,
-                    priority: priority,
-                    description: description,
-                    customer: customer,
-                    department: department
+                const formData = new FormData(taskForm);
+                fetch('/', {
+                    method: 'POST',
+                    body: formData
                 })
-            }).then(response => response.json()).then(data => {
-                if (data.error) {
-                    alert("Ошибка при создании задачи: " + data.error);
-                } else {
-                    addTaskToColumn(data.task_id, data.content, description, 'queue');
-                    document.getElementById('taskForm').reset();
-                }
-            }).catch(error => {
-                alert("Ошибка при создании задачи: " + error);
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message); // Показать сообщение об успешном добавлении задачи
+                    updateTaskList(); // Обновить список задач
+                    taskForm.reset(); // Сбросить значения формы
+                })
+                .catch(error => console.error('Error adding task:', error));
             });
         });
-
-        var queueSortable = new Sortable(document.getElementById('queue'), {
-            group: 'tasks',
-            onAdd: function (evt) {
-                updateTaskStatus(evt.item.getAttribute('data-id'), 'В очереди');
-            }
-        });
-
-        var inProgressSortable = new Sortable(document.getElementById('in-progress'), {
-            group: 'tasks',
-            onAdd: function (evt) {
-                updateTaskStatus(evt.item.getAttribute('data-id'), 'В работе');
-            }
-        });
-
-        var doneSortable = new Sortable(document.getElementById('done'), {
-            group: 'tasks',
-            onAdd: function (evt) {
-                updateTaskStatus(evt.item.getAttribute('data-id'), 'Готово');
-            }
-        });
+        function sendRequest() {
+    		var xhr = new XMLHttpRequest(); // Создание нового XMLHttpRequest объекта
+    		xhr.open("GET", "/pravki", true); // Конфигурирование запроса на получение данных с сервера
+    		xhr.onreadystatechange = function () {
+    		    if (xhr.readyState === 4 && xhr.status === 200) {
+    		        // Ответ получен, но мы ничего с ним не делаем
+    		   }
+    		};
+    		xhr.send(); // Отправка запроса
+		}
+</script>
     </script>
 
 </body>
