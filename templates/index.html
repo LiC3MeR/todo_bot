@@ -147,7 +147,6 @@
                 event.preventDefault(); // Предотвратить отправку формы
 
                 const formData = new FormData(taskForm);
-
                 fetch('/', {
                     method: 'POST',
                     body: formData
