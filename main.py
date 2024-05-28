@@ -99,7 +99,7 @@ def index():
                 priority=priority,
                 description=task_description,
                 project_id=2322606786,
-                status=155860104  # Assuming default section
+                status=1  # Assuming default section
             )
             db.session.add(new_task)
             db.session.commit()
@@ -136,7 +136,7 @@ def admin():
             unique_id = generate_unique_id()
             task_content_with_id = f"{unique_id}: {task_content}"
             # Save the task in the local database with a unique task_id
-            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, status=155860104)
+            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, status=1)
             db.session.add(new_task)
             db.session.commit()
             # Отправка уведомления в телеграм
@@ -161,9 +161,9 @@ def get_tasks():
         task_list = []
         for task in tasks:
             section_status_mapping = {
-                155860104: 'В очереди',
-                155859386: 'В работе',
-                138005323: 'Готово'
+                1: 'В очереди',
+                2: 'В работе',
+                3: 'Готово'
             }
 
             status = task.status
@@ -184,9 +184,9 @@ def update_task_status():
 
         # Mapping for status names to section IDs
         section_status_mapping = {
-            'В очереди': 155860104,
-            'В работе': 155859386,
-            'Готово': 138005323
+            'В очереди': 1,
+            'В работе': 2,
+            'Готово': 3
         }
 
         # Determine the new section ID based on the status provided
@@ -221,9 +221,9 @@ def task_board():
     try:
         tasks = Task.query.all()
         section_status_mapping = {
-            155860104: 'В очереди',
-            155859386: 'В работе',
-            138005323: 'Готово'
+            1: 'В очереди',
+            2: 'В работе',
+            3: 'Готово'
         }
         tasks_by_section = {
             'В очереди': [],
@@ -259,7 +259,7 @@ def create_task():
             priority=priority,
             description=task_description,
             project_id=2322606786,
-            status=155860104  # Default to "В очереди"
+            status=1  # Default to "В очереди"
         )
         db.session.add(new_task)
         db.session.commit()
