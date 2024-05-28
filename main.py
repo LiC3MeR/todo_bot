@@ -2,12 +2,9 @@ from flask import Flask, render_template, request, jsonify, redirect, flash, url
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from telebot import TeleBot
-import os
-import subprocess
-from flask_login import LoginManager, login_required, login_user, logout_user, current_user, UserMixin
+from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import User
+from models import User, Task
 from flask_bcrypt import generate_password_hash
 
 app = Flask(__name__)
@@ -16,11 +13,16 @@ app.config['SECRET_KEY'] = 'roottask'
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
+admin.add_view(ModelView(Task, db.session))
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # Настройки Telegram бота из переменных окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7P0dBDFvUj1wPlxPWVsH0")
@@ -35,10 +37,13 @@ def hash_password(password):
     def __init__(self, username, password):
         self.username = username
         self.password = hash_password(password)
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+
+    def is_active(self):
+        return True
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -89,14 +94,6 @@ def generate_unique_id(department):
         print("Error generating unique ID:", e)
         return "OTH-1"
 
-# Initialize Flask-Admin
-admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
-admin.add_view(ModelView(Task, db.session))
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -104,39 +101,39 @@ def register():
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
-        # Проверка, что пароль совпадает с его подтверждением
+        # Check if password matches its confirmation
         if password != confirm_password:
-            flash('Пароли не совпадают', 'error')
+            flash('Passwords do not match', 'error')
             return redirect(url_for('register'))
 
-        # Проверка, что пользователь с таким именем не существует уже
+        # Check if a user with that username already exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            flash('Пользователь с таким именем уже существует', 'error')
+            flash('User with that username already exists', 'error')
             return redirect(url_for('register'))
 
-        # Создание нового пользователя
+        # Create a new user
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
 
-        flash('Вы успешно зарегистрированы. Теперь вы можете войти в систему', 'success')
+        flash('You have successfully registered. You can now login', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Проверка данных пользователя (например, из базы данных)
+        # Check user data (e.g., from the database)
         username = request.form['username']
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect('/dashboard')  # Перенаправление на защищенную страницу
+            return redirect('/dashboard')  # Redirect to a protected page
         else:
-            flash('Неверное имя пользователя или пароль', 'error')
+            flash('Incorrect username or password', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
