@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, jsonify, redirect, flash, url
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
+from telebot import TeleBot
+import os
+import subprocess
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, Task
