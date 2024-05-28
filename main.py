@@ -353,7 +353,6 @@ def users():
         return jsonify({"error": str(error)})
 
 @app.route('/change_password', methods=['POST'])
-@login_required
 def change_password():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
