@@ -1,30 +1,3 @@
-
-Для добавления интеграции с phpMyAdmin в ваше приложение Flask вы можете использовать библиотеку Flask-Admin. Flask-Admin позволяет создавать административные интерфейсы для ваших моделей базы данных. Вот как вы можете это сделать:
-
-Установите Flask-Admin, если у вас его еще нет:
-
-Copy code
-pip install flask-admin
-Импортируйте необходимые модули:
-
-python
-Copy code
-from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
-Создайте экземпляр класса Admin и передайте ваше приложение Flask:
-
-python
-Copy code
-admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
-Зарегистрируйте вашу модель Task с помощью ModelView:
-
-python
-Copy code
-admin.add_view(ModelView(Task, db.session))
-Это добавит вам административный интерфейс для вашей модели Task, который вы сможете использовать для управления вашими задачами. Вы можете получить доступ к этому интерфейсу, перейдя по URL /admin. Вот как будет выглядеть обновленный код:
-
-python
-Copy code
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
