@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, flash, url_for
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -26,6 +26,9 @@ admin.add_view(ModelView(Task, db.session))
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+def unauthorized_callback():
+    return redirect(url_for('login'))
 
 # Настройки Telegram бота из переменных окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7P0dBDFvUj1wPlxPWVsH0")
@@ -134,7 +137,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect('/dashboard')  # Redirect to a protected page
+            return redirect('/')
         else:
             flash('Incorrect username or password', 'error')
     return render_template('login.html')
