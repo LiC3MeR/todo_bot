@@ -54,7 +54,7 @@ init_db()
 
 def hash_password(password):
     # Генерируем хэш пароля
-    hashed_password = generate_password_hash(password).decode('utf-8')
+    hashed_password = generate_password_hash(password, rounds=8).decode('utf-8')
     return hashed_password
 
 class User(db.Model):
