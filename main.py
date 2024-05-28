@@ -7,7 +7,7 @@ import os
 import subprocess
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash
-from .models import User  # Подразумевается, что у вас есть модель User
+from models import User
 
 app = Flask(__name__)
 
