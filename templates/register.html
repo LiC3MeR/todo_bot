@@ -139,7 +139,15 @@
             </tr>
         </thead>
         <tbody id="userTableBody">
-            <!-- Здесь будут пользователи -->
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>
+                    <button class="change-password-btn" data-user-id="{{ user.id }}">Изменить пароль</button>
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
 
