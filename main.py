@@ -25,7 +25,7 @@ class Task(db.Model):
     priority = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(500), nullable=False)
     project_id = db.Column(db.Integer, nullable=False)
-    section_id = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.Integer, nullable=False)
     department = db.Column(db.String(50))
 
     def __repr__(self):
@@ -100,7 +100,7 @@ def index():
                 priority=priority,
                 description=task_description,
                 project_id=2322606786,
-                section_id=155860104  # Assuming default section
+                status=155860104  # Assuming default section
             )
             db.session.add(new_task)
             db.session.commit()
@@ -137,7 +137,7 @@ def admin():
             unique_id = generate_unique_id()
             task_content_with_id = f"{unique_id}: {task_content}"
             # Save the task in the local database with a unique task_id
-            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, section_id=155860104)
+            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, status=155860104)
             db.session.add(new_task)
             db.session.commit()
             # Отправка уведомления в телеграм
@@ -167,8 +167,8 @@ def get_tasks():
                 138005323: 'Готово'
             }
 
-            section_id = task.section_id
-            task_status = section_status_mapping.get(section_id, 'В очереди')
+            status = task.status
+            task_status = section_status_mapping.get(status, 'В очереди')
             task_list.append({"content": task.content, "status": task_status})
 
         return jsonify({"tasks": task_list})
@@ -192,21 +192,21 @@ def update_task_status():
 
         # Determine the new section ID based on the status provided
         if isinstance(new_status, str):
-            new_section_id = section_status_mapping.get(new_status)
+            new_status = section_status_mapping.get(new_status)
         elif isinstance(new_status, int):
-            new_section_id = new_status
+            new_status = new_status
         else:
             return jsonify({"error": "Неизвестная ошибка"})
 
-        if new_section_id is None:
+        if new_status is None:
             return jsonify({"error": "Неизвестный статус"})
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
             return jsonify({"error": "Задача не найдена"})
 
-        old_status = section_status_mapping.get(task.section_id, 'В очереди')
-        task.section_id = new_section_id
+        old_status = section_status_mapping.get(task.status, 'В очереди')
+        task.status = new_status
         db.session.commit()
 
         # Отправка уведомления в телеграм
@@ -232,7 +232,7 @@ def task_board():
             'Готово': []
         }
         for task in tasks:
-            status = section_status_mapping.get(task.section_id, 'В очереди')
+            status = section_status_mapping.get(task.status, 'В очереди')
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
@@ -260,7 +260,7 @@ def create_task():
             priority=priority,
             description=task_description,
             project_id=2322606786,
-            section_id=155860104  # Default to "В очереди"
+            status=155860104  # Default to "В очереди"
         )
         db.session.add(new_task)
         db.session.commit()
