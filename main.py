@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -71,6 +71,10 @@ def generate_unique_id(department):
 # Initialize Flask-Admin
 admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
 admin.add_view(ModelView(Task, db.session))
+
+@app.route('/phpmyadmin')
+def phpmyadmin():
+    return redirect('/phpmyadmin')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
