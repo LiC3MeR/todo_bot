@@ -8,7 +8,7 @@ import subprocess
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:6QCzW@w8@localhost/tasks'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
