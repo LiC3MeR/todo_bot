@@ -26,7 +26,14 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "-1002075733635")
 
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
+def hash_password(password):
+    # Генерируем хэш пароля
+    hashed_password = generate_password_hash(password, rounds=8).decode('utf-8')
+    return hashed_password
 
+    def __init__(self, username, password):
+        self.username = username
+        self.password = hash_password(password)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -51,20 +58,6 @@ def init_db():
 
 # Initialize the database
 init_db()
-
-def hash_password(password):
-    # Генерируем хэш пароля
-    hashed_password = generate_password_hash(password, rounds=8).decode('utf-8')
-    return hashed_password
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-
-    def __init__(self, username, password):
-        self.username = username
-        self.password = hash_password(password)
 
 # Функция для отправки уведомления в телеграм
 def send_telegram_message(message):
