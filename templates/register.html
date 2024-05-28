@@ -122,95 +122,134 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Список пользователей</h2>
-        <form action="/create_user" method="POST">
-            <label for="username">Имя пользователя:</label><br>
-            <input type="text" id="username" name="username" required><br>
-            <label for="password">Пароль:</label><br>
-            <input type="password" id="password" name="password" required><br>
-            <input type="submit" value="Создать пользователя">
-        </form>
-        <table id="userTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Имя пользователя</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr class="userRow" data-user-id="{{ user.id }}" data-username="{{ user.username }}">
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div id="userModal" class="modal">
+    <h2>Список пользователей</h2>
+    <form id="createUserForm" action="/create_user" method="POST">
+        <label for="username">Имя пользователя:</label><br>
+        <input type="text" id="username" name="username" required><br>
+        <label for="password">Пароль:</label><br>
+        <input type="password" id="password" name="password" required><br>
+        <input type="submit" value="Создать пользователя">
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Имя пользователя</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody">
+            <!-- Здесь будут пользователи -->
+        </tbody>
+    </table>
+
+    <div id="changePasswordModal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h3>Данные пользователя</h3>
-            <p><strong>ID: </strong><span id="modalUserId"></span></p>
-            <p><strong>Имя пользователя: </strong><span id="modalUsername"></span></p>
-            <button id="changePasswordBtn">Изменить пароль</button>
-            <button id="generatePasswordBtn">Сгенерировать пароль</button>
+            <h3>Изменить пароль</h3>
+            <form id="changePasswordForm">
+                <input type="hidden" id="userId" name="user_id">
+                <label for="newPassword">Новый пароль:</label><br>
+                <input type="password" id="newPassword" name="new_password" required><br>
+                <input type="submit" value="Изменить пароль">
+            </form>
         </div>
     </div>
+
     <script>
-        // Получаем модальное окно и кнопку закрытия
-        var modal = document.getElementById("userModal");
-        var closeBtn = document.getElementsByClassName("close")[0];
+        document.addEventListener('DOMContentLoaded', function () {
+            // Функция для получения списка пользователей
+            function getUsers() {
+                fetch('/get_users')
+                    .then(response => response.json())
+                    .then(data => {
+                        const userTableBody = document.getElementById('userTableBody');
+                        userTableBody.innerHTML = '';
 
-        // Получаем ссылки на элементы в модальном окне
-        var modalUserId = document.getElementById("modalUserId");
-        var modalUsername = document.getElementById("modalUsername");
-        var changePasswordBtn = document.getElementById("changePasswordBtn");
-        var generatePasswordBtn = document.getElementById("generatePasswordBtn");
+                        data.users.forEach(user => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>
+                                    <button class="change-password-btn" data-user-id="${user.id}">Изменить пароль</button>
+                                </td>
+                            `;
+                            userTableBody.appendChild(row);
+                        });
 
-        // Получаем все строки таблицы с пользователями
-        var userRows = document.getElementsByClassName("userRow");
+                        // Назначение обработчика событий для каждой кнопки "Изменить пароль"
+                        const changePasswordButtons = document.querySelectorAll('.change-password-btn');
+                        changePasswordButtons.forEach(button => {
+                            button.addEventListener('click', function () {
+                                const userId = this.getAttribute('data-user-id');
+                                document.getElementById('userId').value = userId;
+                                document.getElementById('changePasswordModal').style.display = 'block';
+                            });
+                        });
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
 
-        // При клике на любую строку таблицы с пользователями
-        Array.from(userRows).forEach(function(userRow) {
-            userRow.addEventListener("click", function() {
-                // Получаем данные о пользователе из атрибутов data
-                var userId = userRow.getAttribute("data-user-id");
-                var username = userRow.getAttribute("data-username");
+            // Получение списка пользователей при загрузке страницы
+            getUsers();
 
-                // Заполняем данные модального окна
-                modalUserId.textContent = userId;
-                modalUsername.textContent = username;
+            // Получение модального окна для изменения пароля и его кнопки закрытия
+            const changePasswordModal = document.getElementById('changePasswordModal');
+            const closeButton = document.querySelector('.close');
 
-                // Отображаем модальное окно
-                modal.style.display = "block";
+            // Обработка события закрытия модального окна
+            closeButton.addEventListener('click', function () {
+                changePasswordModal.style.display = 'none';
+            });
+
+            // Обработка события нажатия клавиши Escape для закрытия модального окна
+            window.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    changePasswordModal.style.display = 'none';
+                }
+            });
+
+            // Получение формы изменения пароля
+            const changePasswordForm = document.getElementById('changePasswordForm');
+
+            // Назначение обработчика события отправки формы изменения пароля
+            changePasswordForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                const formData = new FormData(this);
+
+                fetch('/change_password', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        changePasswordModal.style.display = 'none';
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+
+            // Обновление списка пользователей при создании нового пользователя
+            const createUserForm = document.getElementById('createUserForm');
+            createUserForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                const formData = new FormData(this);
+
+                fetch('/create_user', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        getUsers(); // Обновление списка пользователей после создания нового пользователя
+                    })
+                    .catch(error => console.error('Error:', error));
             });
         });
-
-        // При клике на кнопку закрытия
-        closeBtn.onclick = function() {
-            modal.style.display = "none";
-        }
-
-        // При клике вне модального окна (закрывает его)
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
-
-        // Функция для изменения пароля
-        changePasswordBtn.onclick = function() {
-            // Ваш код для изменения пароля
-            alert("Функция изменения пароля еще не реализована");
-        }
-
-        // Функция для генерации пароля
-        generatePasswordBtn.onclick = function() {
-            // Ваш код для генерации пароля
-            alert("Функция генерации пароля еще не реализована");
-        }
     </script>
 </body>
 </html>

@@ -359,11 +359,11 @@ def change_password():
         user_id = request.form.get('user_id')
         new_password = request.form.get('new_password')
 
-        # Найдите пользователя по user_id
+        # Find the user by user_id
         user = User.query.filter_by(id=user_id).first()
 
         if user:
-            # Измените пароль пользователя
+            # Change the user's password
             user.password = generate_password_hash(new_password)
             db.session.commit()
             flash('Пароль пользователя успешно изменён', 'success')
