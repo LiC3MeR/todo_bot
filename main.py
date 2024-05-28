@@ -102,6 +102,7 @@ def generate_unique_id(department):
         return "OTH-1"
 
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def register():
     if request.method == 'POST':
         username = request.form['username']
@@ -200,6 +201,7 @@ def index():
         return "Method Not Allowed", 405  # Обработка других методов не поддерживается
 
 @app.route('/admin', methods=['GET', 'POST'])
+@login_required
 def admin():
     if request.method == 'POST':
         task_content = request.form['task_content']
@@ -295,6 +297,7 @@ def update_task_status():
         return jsonify({"error": str(error)})
 
 @app.route('/task_board')
+@login_required
 def task_board():
     try:
         tasks = Task.query.all()
@@ -401,6 +404,7 @@ def run_script():
         }), 500
 
 @app.route('/show_delete_task')
+@login_required
 def show_delete_task():
     tasks = Task.query.all()
     return render_template('delete_task.html', tasks=tasks)
