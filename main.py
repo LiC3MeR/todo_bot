@@ -101,24 +101,18 @@ def generate_unique_id(department):
         print("Error generating unique ID:", e)
         return "OTH-1"
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/create_user', methods=['POST'])
 @login_required
-def register():
+def create_user():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        confirm_password = request.form['confirm_password']
-
-        # Check if password matches its confirmation
-        if password != confirm_password:
-            flash('Passwords do not match', 'error')
-            return redirect(url_for('register'))
 
         # Check if a user with that username already exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            flash('User with that username already exists', 'error')
-            return redirect(url_for('register'))
+            flash('Пользователь с таким именем уже существует', 'error')
+            return redirect(url_for('users'))
 
         # Create a new user
         hashed_password = generate_password_hash(password)
@@ -126,9 +120,8 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        flash('You have successfully registered. You can now login', 'success')
-        return redirect(url_for('login'))
-    return render_template('register.html')
+        flash('Пользователь успешно создан', 'success')
+        return redirect(url_for('users'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -348,6 +341,17 @@ def create_task():
     except Exception as error:
         print("Error creating task:", error)
         return jsonify({"error": str(error)})
+
+@app.route('/users')
+@login_required
+def users():
+    try:
+        users = User.query.all()
+        return render_template('register.html', users=users)
+    except Exception as error:
+        print("Error fetching users:", error)
+        return jsonify({"error": str(error)})
+
 
 @app.route('/delete_task', methods=['POST'])
 def delete_task():

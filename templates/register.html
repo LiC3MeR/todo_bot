@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Создать пользователя</title>
+    <title>Список пользователей</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -66,27 +66,46 @@
             margin-bottom: 5px;
             border-radius: 5px;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            color: #fff;
+        }
+        th {
+            background-color: #333;
+        }
     </style>
 </head>
 <body>
-    <form method="POST">
-        <h2>Создать пользователя</h2>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-        <label for="username">Имя пользователя:</label>
-        <input type="text" id="username" name="username">
-        <label for="password">Пароль:</label>
-        <input type="password" id="password" name="password">
-        <label for="confirm_password">Подтвердите пароль:</label>
-        <input type="password" id="confirm_password" name="confirm_password">
+    <h2>Список пользователей</h2>
+    <form action="/create_user" method="POST">
+        <label for="username">Имя пользователя:</label><br>
+        <input type="text" id="username" name="username" required><br>
+        <label for="password">Пароль:</label><br>
+        <input type="password" id="password" name="password" required><br>
         <input type="submit" value="Создать пользователя">
     </form>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Имя пользователя</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>
