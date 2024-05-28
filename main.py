@@ -5,8 +5,14 @@ from flask_admin.contrib.sqla import ModelView
 from telebot import TeleBot
 import os
 import subprocess
+from flask_login import LoginManager, login_required, login_user, logout_user, current_user
+from werkzeug.security import generate_password_hash
+from .models import User  # Подразумевается, что у вас есть модель User
 
 app = Flask(__name__)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -17,6 +23,11 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "-1002075733635")
 
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -71,11 +82,63 @@ def generate_unique_id(department):
 admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
 admin.add_view(ModelView(Task, db.session))
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        # Проверка, что пароль совпадает с его подтверждением
+        if password != confirm_password:
+            flash('Пароли не совпадают', 'error')
+            return redirect(url_for('register'))
+
+        # Проверка, что пользователь с таким именем не существует уже
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Пользователь с таким именем уже существует', 'error')
+            return redirect(url_for('register'))
+
+        # Создание нового пользователя
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash('Вы успешно зарегистрированы. Теперь вы можете войти в систему', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Проверка данных пользователя (например, из базы данных)
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            return redirect('/dashboard')  # Перенаправление на защищенную страницу
+        else:
+            flash('Неверное имя пользователя или пароль', 'error')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect('/login')  # Перенаправление на страницу входа после выхода
+
 @app.route('/phpmyadmin')
 def phpmyadmin():
     return redirect('/phpmyadmin')
-
 @app.route('/', methods=['GET', 'POST'])
+@login_required
 def index():
     if request.method == 'POST':
         task_content = request.form['task_content']
