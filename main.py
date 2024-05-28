@@ -352,6 +352,44 @@ def users():
         print("Error fetching users:", error)
         return jsonify({"error": str(error)})
 
+@app.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        new_password = request.form.get('new_password')
+
+        # Найдите пользователя по user_id
+        user = User.query.filter_by(id=user_id).first()
+
+        if user:
+            # Измените пароль пользователя
+            user.password = generate_password_hash(new_password)
+            db.session.commit()
+            flash('Пароль пользователя успешно изменён', 'success')
+        else:
+            flash('Пользователь не найден', 'error')
+
+    return redirect('/user_list')
+
+@app.route('/delete_user', methods=['POST'])
+@login_required
+def delete_user():
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+
+        # Найдите пользователя по user_id
+        user = User.query.filter_by(id=user_id).first()
+
+        if user:
+            # Удалите пользователя из базы данных
+            db.session.delete(user)
+            db.session.commit()
+            flash('Пользователь успешно удалён', 'success')
+        else:
+            flash('Пользователь не найден', 'error')
+
+    return redirect('/user_list')
 
 @app.route('/delete_task', methods=['POST'])
 def delete_task():

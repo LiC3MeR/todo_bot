@@ -5,81 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Список пользователей</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #222;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        form {
-            background-color: #333;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            width: 300px;
-        }
-        h2 {
-            text-align: center;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #444;
-            color: #fff;
-            box-sizing: border-box;
-        }
-        input[type="submit"] {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: #fff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-        li {
-            background-color: #ff3333;
-            color: #fff;
-            padding: 10px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-            color: #fff;
-        }
-        th {
-            background-color: #333;
-        }
+        /* Ваш стиль */
     </style>
 </head>
 <body>
@@ -96,6 +22,7 @@
             <tr>
                 <th>ID</th>
                 <th>Имя пользователя</th>
+                <th>Действия</th> <!-- Добавлен столбец для действий -->
             </tr>
         </thead>
         <tbody>
@@ -103,6 +30,19 @@
             <tr>
                 <td>{{ user.id }}</td>
                 <td>{{ user.username }}</td>
+                <td>
+                    <!-- Форма для изменения пароля пользователя -->
+                    <form action="/change_password" method="POST" style="display: inline;">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="password" name="new_password" placeholder="Новый пароль" required>
+                        <input type="submit" value="Изменить">
+                    </form>
+                    <!-- Форма для удаления пользователя -->
+                    <form action="/delete_user" method="POST" style="display: inline;">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="submit" value="Удалить">
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
