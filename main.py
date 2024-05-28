@@ -11,6 +11,7 @@ from models import User
 from flask_bcrypt import generate_password_hash
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'roottask'
 
 login_manager = LoginManager()
 login_manager.init_app(app)
