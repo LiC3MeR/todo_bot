@@ -8,11 +8,14 @@ import subprocess
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user, UserMixin
 from werkzeug.security import generate_password_hash
 from models import User
+from flask_bcrypt import generate_password_hash
 
 app = Flask(__name__)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -48,6 +51,20 @@ def init_db():
 
 # Initialize the database
 init_db()
+
+def hash_password(password):
+    # Генерируем хэш пароля
+    hashed_password = generate_password_hash(password).decode('utf-8')
+    return hashed_password
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = hash_password(password)
 
 # Функция для отправки уведомления в телеграм
 def send_telegram_message(message):
