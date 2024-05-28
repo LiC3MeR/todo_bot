@@ -26,7 +26,6 @@ class Task(db.Model):
     description = db.Column(db.String(500), nullable=False)
     project_id = db.Column(db.Integer, nullable=False)
     status = db.Column(db.Integer, nullable=False)
-    department = db.Column(db.String(50))
 
     def __repr__(self):
         return f'<Task {self.content}>'
