@@ -370,7 +370,7 @@ def change_password():
         else:
             flash('Пользователь не найден', 'error')
 
-    return redirect('/user_list')
+    return redirect('/users')
 
 @app.route('/delete_user', methods=['POST'])
 @login_required

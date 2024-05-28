@@ -1,263 +1,273 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список пользователей</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #222;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            width: 80%;
-            margin: auto;
-        }
-        form {
-            background-color: #333;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            width: 300px;
-        }
-        h2 {
-            text-align: center;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #444;
-            color: #fff;
-            box-sizing: border-box;
-        }
-        input[type="submit"] {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: #fff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-            color: #fff;
-        }
-        th {
-            background-color: #333;
-        }
-        /* Модальное окно */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: #333;
-            margin: 15% auto;
-            padding: 20px;
-            border-radius: 5px;
-            width: 300px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            position: relative;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .close:hover,
-        .close:focus {
-            color: #fff;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        /* Кнопки в модальном окне */
-        .modal-content button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: #fff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .modal-content button:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <h2>Список пользователей</h2>
-    <form id="createUserForm" action="/create_user" method="POST">
-        <label for="username">Имя пользователя:</label><br>
-        <input type="text" id="username" name="username" required><br>
-        <label for="password">Пароль:</label><br>
-        <input type="password" id="password" name="password" required><br>
-        <input type="submit" value="Создать пользователя">
-    </form>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Имя пользователя</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody id="userTableBody">
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>
-                    <button class="change-password-btn" data-user-id="{{ user.id }}">Изменить пароль</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div id="changePasswordModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Изменить пароль</h3>
-            <form id="changePasswordForm">
-                <input type="hidden" id="userId" name="user_id">
-                <label for="newPassword">Новый пароль:</label><br>
-                <input type="password" id="newPassword" name="new_password" required><br>
-                <input type="submit" value="Изменить пароль">
-            </form>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Функция для получения списка пользователей
-            function getUsers() {
-                fetch('/get_users')
-                    .then(response => response.json())
-                    .then(data => {
-                        const userTableBody = document.getElementById('userTableBody');
-                        userTableBody.innerHTML = '';
-
-                        data.users.forEach(user => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${user.id}</td>
-                                <td>${user.username}</td>
-                                <td>
-                                    <button class="change-password-btn" data-user-id="${user.id}">Изменить пароль</button>
-                                </td>
-                            `;
-                            userTableBody.appendChild(row);
-                        });
-
-                        // Назначение обработчика событий для каждой кнопки "Изменить пароль"
-                        const changePasswordButtons = document.querySelectorAll('.change-password-btn');
-                        changePasswordButtons.forEach(button => {
-                            button.addEventListener('click', function () {
-                                const userId = this.getAttribute('data-user-id');
-                                document.getElementById('userId').value = userId;
-                                document.getElementById('changePasswordModal').style.display = 'block';
-                            });
-                        });
-                    })
-                    .catch(error => console.error('Error:', error));
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Список пользователей</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #222;
+                color: #fff;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
             }
+            .container {
+                width: 80%;
+                margin: auto;
+            }
+            form {
+                background-color: #333;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                width: 300px;
+            }
+            h2 {
+                text-align: center;
+            }
+            label {
+                display: block;
+                margin-bottom: 5px;
+            }
+            input[type="text"],
+            input[type="password"] {
+                width: 100%;
+                padding: 10px;
+                margin-bottom: 15px;
+                border: none;
+                border-radius: 5px;
+                background-color: #444;
+                color: #fff;
+                box-sizing: border-box;
+            }
+            input[type="submit"] {
+                width: 100%;
+                padding: 10px;
+                border: none;
+                border-radius: 5px;
+                background-color: #007bff;
+                color: #fff;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+            input[type="submit"]:hover {
+                background-color: #0056b3;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            th, td {
+                padding: 8px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+                color: #fff;
+            }
+            th {
+                background-color: #333;
+            }
+            /* Модальное окно */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+            }
+            .modal-content {
+                background-color: #333;
+                margin: 15% auto;
+                padding: 20px;
+                border-radius: 5px;
+                width: 300px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                position: relative;
+            }
+            .close {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+            }
+            .close:hover,
+            .close:focus {
+                color: #fff;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            /* Кнопки в модальном окне */
+            .modal-content button {
+                width: 100%;
+                padding: 10px;
+                margin-top: 10px;
+                border: none;
+                border-radius: 5px;
+                background-color: #007bff;
+                color: #fff;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+            .modal-content button:hover {
+                background-color: #0056b3;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Список пользователей</h2>
+            <form action="/create_user" method="POST">
+                <label for="username">Имя пользователя:</label><br>
+                <input type="text" id="username" name="username" required><br>
+                <label for="password">Пароль:</label><br>
+                <input type="password" id="password" name="password" required><br>
+                <input type="submit" value="Создать пользователя">
+            </form>
+            <table id="userTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Имя пользователя</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="userRow" data-user-id="{{ user.id }}" data-username="{{ user.username }}">
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div id="userModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Данные пользователя</h3>
+                <p><strong>ID: </strong><span id="modalUserId"></span></p>
+                <p><strong>Имя пользователя: </strong><span id="modalUsername"></span></p>
 
-            // Получение списка пользователей при загрузке страницы
-            getUsers();
+                <!-- Форма для смены пароля -->
+                <div id="changePasswordForm" style="display: none;">
+                    <label for="newPassword">Новый пароль:</label><br>
+                    <input type="text" id="newPassword" name="newPassword" required><br>
+                    <input type="button" id="confirmPasswordBtn" value="Подтвердить изменения">
+                </div>
 
-            // Получение модального окна для изменения пароля и его кнопки закрытия
-            const changePasswordModal = document.getElementById('changePasswordModal');
-            const closeButton = document.querySelector('.close');
+                <!-- Кнопки действий -->
+                <button id="showChangePasswordFormBtn">Сменить пароль</button>
+                <button id="generatePasswordBtn">Сгенерировать пароль</button>
+            </div>
+        </div>
+        <script>
+            // Получаем все строки таблицы с пользователями
+            var userRows = document.getElementsByClassName("userRow");
 
-            // Обработка события закрытия модального окна
-            closeButton.addEventListener('click', function () {
-                changePasswordModal.style.display = 'none';
+            // При клике на любую строку таблицы с пользователями
+            Array.from(userRows).forEach(function(userRow) {
+                userRow.addEventListener("click", function() {
+                    // Проверяем, открыто ли модальное окно
+                    if (modal.style.display !== "block") {
+                        // Получаем данные о пользователе из атрибутов data
+                        var userId = userRow.getAttribute("data-user-id");
+                        var username = userRow.getAttribute("data-username");
+
+                        // Заполняем данные модального окна
+                        modalUserId.textContent = userId;
+                        modalUsername.textContent = username;
+
+                        // Отображаем модальное окно
+                        modal.style.display = "block";
+                    }
+                });
             });
 
-            // Обработка события нажатия клавиши Escape для закрытия модального окна
-            window.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape') {
-                    changePasswordModal.style.display = 'none';
-                }
-            });
+            // Получаем модальное окно и кнопку закрытия
+            var modal = document.getElementById("userModal");
+            var closeBtn = document.getElementsByClassName("close")[0];
 
-            // Получение формы изменения пароля
-            const changePasswordForm = document.getElementById('changePasswordForm');
+            // Получаем ссылки на элементы в модальном окне
+            var modalUserId = document.getElementById("modalUserId");
+            var modalUsername = document.getElementById("modalUsername");
 
-            // Назначение обработчика события отправки формы изменения пароля
-            changePasswordForm.addEventListener('submit', function (event) {
-                event.preventDefault();
+            // При клике на кнопку "Сменить пароль"
+            document.getElementById("showChangePasswordFormBtn").onclick = function() {
+                // Показываем форму для ввода нового пароля
+                document.getElementById("changePasswordForm").style.display = "block";
+            };
 
-                const formData = new FormData(this);
+            // Функция для изменения пароля
+            document.getElementById("confirmPasswordBtn").onclick = function() {
+                // Получаем ID пользователя
+                var userId = modalUserId.textContent;
+                // Получаем новый пароль
+                var newPassword = document.getElementById("newPassword").value;
 
+                // Отправляем POST запрос на сервер для изменения пароля
                 fetch('/change_password', {
                     method: 'POST',
-                    body: formData
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        alert(data.message);
-                        changePasswordModal.style.display = 'none';
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        new_password: newPassword
                     })
-                    .catch(error => console.error('Error:', error));
-            });
-
-            // Обновление списка пользователей при создании нового пользователя
-            const createUserForm = document.getElementById('createUserForm');
-            createUserForm.addEventListener('submit', function (event) {
-                event.preventDefault();
-
-                const formData = new FormData(this);
-
-                fetch('/create_user', {
-                    method: 'POST',
-                    body: formData
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        alert(data.message);
-                        getUsers(); // Обновление списка пользователей после создания нового пользователя
-                    })
-                    .catch(error => console.error('Error:', error));
-            });
-        });
-    </script>
-</body>
-</html>
+                .then(response => {
+                    // Если запрос успешен, показываем сообщение об успешном изменении пароля
+                    if (response.ok) {
+                        alert("Пароль успешно изменен");
+                    } else {
+                        // Если произошла ошибка, показываем сообщение с текстом ошибки
+                        response.json().then(data => {
+                            alert("Ошибка: " + data.error);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка при выполнении запроса:', error);
+                    alert("Произошла ошибка при выполнении запроса. Пожалуйста, попробуйте еще раз.");
+                });
+
+                // Скрываем форму для ввода нового пароля после изменения
+                document.getElementById("changePasswordForm").style.display = "none";
+            };
+
+            // Функция для генерации пароля
+            document.getElementById("generatePasswordBtn").onclick = function() {
+                // Длина пароля (можете изменить по своему усмотрению)
+                var length = 12;
+                // Возможные символы для пароля
+                var charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=";
+                var password = "";
+                for (var i = 0; i < length; i++) {
+                    // Выбираем случайный символ из charset и добавляем его к паролю
+                    password += charset.charAt(Math.floor(Math.random() * charset.length));
+                }
+                // Выводим сгенерированный пароль в поле для нового пароля
+                document.getElementById("newPassword").value = password;
+            };
+
+            // При клике на кнопку закрытия
+            closeBtn.onclick = function() {
+                modal.style.display = "none";
+            };
+
+            // При клике вне модального окна (закрывает его)
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            };
+        </script>
+    </body>
+    </html>
