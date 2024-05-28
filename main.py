@@ -353,16 +353,17 @@ def users():
         return jsonify({"error": str(error)})
 
 @app.route('/change_password', methods=['POST'])
-def change_password():
+@login_required
+def change_user_password():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
         new_password = request.form.get('new_password')
 
-        # Find the user by user_id
+        # Найти пользователя по user_id
         user = User.query.filter_by(id=user_id).first()
 
         if user:
-            # Change the user's password
+            # Изменить пароль пользователя
             user.password = generate_password_hash(new_password)
             db.session.commit()
             flash('Пароль пользователя успешно изменён', 'success')
