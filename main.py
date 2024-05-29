@@ -9,6 +9,8 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, Task
 from flask_bcrypt import generate_password_hash, check_password_hash
+from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'roottask'
@@ -60,6 +62,8 @@ class Task(db.Model):
     description = db.Column(db.String(500), nullable=False)
     project_id = db.Column(db.Integer, nullable=False)
     status = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.TIMESTAMP, nullable=False, default=datetime.now(pytz.timezone('Etc/GMT-5')))
+
 
     def __repr__(self):
         return f'<Task {self.content}>'
@@ -241,13 +245,18 @@ def get_tasks():
 
             status = task.status
             task_status = section_status_mapping.get(status, 'В очереди')
-            task_list.append({"content": task.content, "status": task_status})
+            # Форматирование даты создания для удобного отображения
+            created_at = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Не указана"
+            task_list.append({
+                "content": task.content,
+                "status": task_status,
+                "created_at": created_at  # Добавление даты создания
+            })
 
         return jsonify({"tasks": task_list})
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
-
 
 @app.route('/update_task_status', methods=['POST'])
 def update_task_status():
@@ -325,8 +334,12 @@ def create_task():
         department = request.json['department']
         task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
 
-        unique_id = generate_unique_id()
+        unique_id = generate_unique_id(department)
         task_content_with_id = f"{unique_id}: {task_content}"
+
+        # Сохранение времени создания задачи в GMT+5
+        gmt_plus_5 = pytz.timezone('Etc/GMT-5')
+        created_at = datetime.now(gmt_plus_5)
 
         new_task = Task(
             task_id=unique_id,
@@ -334,7 +347,8 @@ def create_task():
             priority=priority,
             description=task_description,
             project_id=2322606786,
-            status=1  # Default to "В очереди"
+            status=1,  # Default to "В очереди"
+            created_at=created_at
         )
         db.session.add(new_task)
         db.session.commit()
