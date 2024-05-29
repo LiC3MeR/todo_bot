@@ -11,7 +11,6 @@ from models import User, Task
 from flask_bcrypt import generate_password_hash, check_password_hash
 from datetime import datetime
 import pytz
-from settings import config_prod, config_test
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'roottask'
@@ -19,11 +18,7 @@ app.config['SECRET_KEY'] = 'roottask'
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-if app.config['ENV'] == 'production':
-    app.config.from_object(config_prod)
-else:
-    app.config.from_object(config_test)
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -480,4 +475,4 @@ def show_delete_task():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port='5000')
