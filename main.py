@@ -11,19 +11,19 @@ from models import User, Task
 from flask_bcrypt import generate_password_hash, check_password_hash
 from datetime import datetime
 import pytz
+from settings import config_prod, config_test
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'roottask'
 
-app_test = Flask(__name__)
-app_test.config['SECRET_KEY'] = 'roottask'
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-app_test.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/task_test'
+if app.config['ENV'] == 'production':
+    app.config.from_object(config_prod)
+else:
+    app.config.from_object(config_test)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
