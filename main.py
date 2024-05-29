@@ -13,6 +13,7 @@ from flask_bcrypt import generate_password_hash, check_password_hash
 from datetime import datetime
 import pytz
 import sys
+from sqlalchemy.orm import relationship
 
 app = Flask(__name__)
 
@@ -33,12 +34,15 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+class TaskAdmin(ModelView):
+    column_list = ('content', 'description', 'priority', 'project_id', 'status', 'assignee')
+
 # Инициализация Flask-Admin
 admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
 
 # Регистрация моделей для админки
 from models import User, Task  # Подключаем модели после инициализации db
-admin.add_view(ModelView(Task, db.session))
+admin.add_view(TaskAdmin(Task, db.session))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -75,13 +79,25 @@ class Task(db.Model):
     content = db.Column(db.String(200), nullable=False)
     priority = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(500), nullable=False)
-    project_id = db.Column(db.Integer, nullable=False)
+    project_id = db.Column(db.BigInteger, nullable=True)
     status = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.TIMESTAMP, nullable=False, default=datetime.now(pytz.timezone('Etc/GMT-5')))
+    created_at = db.Column(db.TIMESTAMP, nullable=False, server_default=db.func.now())
 
+    assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
 
     def __repr__(self):
-        return f'<Task {self.content}>'
+        return f'<Task {self.id}>'
+
+    def update_details(self, content, description):
+        self.content = content
+        self.description = description
+
+    def assign_to_user(self, user_id):
+        self.assigned_to = user_id
+
+    def load_user(user_id):
+        return db.session.query(User).get(int(user_id))
 
 # Function to initialize the database
 def init_db():
@@ -119,6 +135,34 @@ def generate_unique_id(department):
     except Exception as e:
         print("Error generating unique ID:", e)
         return "OTH-1"
+
+@app.route('/update_task/<task_id>', methods=['POST'])
+@login_required
+def update_task(task_id):
+    try:
+        task = Task.query.filter_by(task_id=task_id).first()
+        if not task:
+            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
+
+        # Получаем данные из запроса
+        content = request.json.get('content')
+        description = request.json.get('description')
+        assigned_to = request.json.get('assigned_to')
+
+        # Обновляем задачу
+        if content:
+            task.content = content
+        if description:
+            task.description = description
+        if assigned_to:
+            task.assigned_to = assigned_to
+
+        db.session.commit()
+
+        return jsonify({"message": "Задача успешно обновлена"})
+    except Exception as error:
+        print("Error updating task:", error)
+        return jsonify({"error": str(error)})
 
 @app.route('/create_user', methods=['POST'])
 @login_required
@@ -343,6 +387,7 @@ def task_board():
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
 
+
 @app.route('/create_task', methods=['POST'])
 @login_required
 def create_task():
@@ -352,8 +397,9 @@ def create_task():
         description = request.json['description']
         customer = request.json['customer']
         department = request.json['department']
-        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
+        assigned_to = int(request.json['assigned_to'])  # ID исполнителя
 
+        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
         unique_id = generate_unique_id(department)
         task_content_with_id = f"{unique_id}: {task_content}"
 
@@ -368,11 +414,13 @@ def create_task():
             description=task_description,
             project_id=2322606786,
             status=1,  # Default to "В очереди"
-            created_at=created_at
+            created_at=created_at,
+            assigned_to=assigned_to
         )
         db.session.add(new_task)
         db.session.commit()
         send_telegram_message(f"Новая задача: {task_content_with_id}")
+
         return jsonify({"message": "Задача успешно добавлена", "task_id": unique_id, "content": task_content_with_id})
     except Exception as error:
         print("Error creating task:", error)
@@ -480,6 +528,15 @@ def run_script():
             'stdout': e.stdout,
             'stderr': e.stderr
         }), 500
+
+@app.route('/get_users', methods=['GET'])
+def get_users():
+    try:
+        users = User.query.all()
+        user_list = [{'id': user.id, 'username': user.username} for user in users]
+        return jsonify(user_list)
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 @app.route('/show_delete_task')
 @login_required
