@@ -147,6 +147,7 @@ def logout():
 def phpmyadmin():
     return redirect('/phpmyadmin')
 @app.route('/', methods=['GET', 'POST'])
+@login_required
 def index():
     if request.method == 'POST':
         task_content = request.form['task_content']
@@ -314,6 +315,7 @@ def task_board():
         return jsonify({"error": str(error)})
 
 @app.route('/create_task', methods=['POST'])
+@login_required
 def create_task():
     try:
         task_content = request.json['task_content']
@@ -366,11 +368,12 @@ def change_user_password():
             # Изменить пароль пользователя
             user.password = generate_password_hash(new_password)
             db.session.commit()
-            flash('Пароль пользователя успешно изменён', 'success')
+            flash('Пароль пользователя успешно изменён', 'success')  # Добавлено Flash сообщение
         else:
             flash('Пользователь не найден', 'error')
 
     return redirect('/users')
+
 
 @app.route('/delete_user', methods=['POST'])
 @login_required
