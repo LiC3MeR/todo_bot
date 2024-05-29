@@ -271,23 +271,27 @@ def update_task_status():
             'Готово': 3
         }
 
+        # Mapping for section IDs back to status names
+        id_to_status_mapping = {v: k for k, v in section_status_mapping.items()}
+
         # Determine the new section ID based on the status provided
         if isinstance(new_status, str):
-            new_status = section_status_mapping.get(new_status)
-        elif isinstance(new_status, int):
-            new_status = new_status
+            new_section_id = section_status_mapping.get(new_status)
+            if new_section_id is None:
+                return jsonify({"error": "Неизвестный статус"})
+        elif isinstance(new_status, int) and new_status in id_to_status_mapping:
+            new_section_id = new_status
+            new_status = id_to_status_mapping[new_section_id]
         else:
-            return jsonify({"error": "Неизвестная ошибка"})
-
-        if new_status is None:
-            return jsonify({"error": "Неизвестный статус"})
+            return jsonify({"error": "Некорректный формат статуса"})
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
             return jsonify({"error": "Задача не найдена"})
 
-        old_status = section_status_mapping.get(task.status, 'В очереди')
-        task.status = new_status
+        old_status_id = section_status_mapping.get(task.status, 1)
+        old_status = id_to_status_mapping[old_status_id]
+        task.status = new_section_id
         db.session.commit()
 
         # Отправка уведомления в телеграм
@@ -297,6 +301,7 @@ def update_task_status():
     except Exception as error:
         print("Ошибка обновления статуса задачи:", error)
         return jsonify({"error": str(error)})
+
 
 @app.route('/task_board')
 @login_required
