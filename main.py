@@ -6,23 +6,38 @@ from telebot import TeleBot
 import os
 import subprocess
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user, UserMixin
+from config import DevelopmentConfig, ProductionConfig
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, Task
 from flask_bcrypt import generate_password_hash, check_password_hash
 from datetime import datetime
 import pytz
+import sys
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'roottask'
+
+# Определяем конфигурацию на основе переданных аргументов или переменных окружения
+if len(sys.argv) > 1 and sys.argv[1] == 'prod':
+    app.config.from_object(ProductionConfig)
+else:
+    app.config.from_object(DevelopmentConfig)
+
+# Установка порта из переменной окружения или аргумента командной строки
+port = os.getenv('FLASK_PORT') or 5000
+if len(sys.argv) > 2 and sys.argv[2].isdigit():
+    port = int(sys.argv[2])
+
+# Инициализация SQLAlchemy
+db = SQLAlchemy(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-
+# Инициализация Flask-Admin
 admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
+
+# Регистрация моделей для админки
+from models import User, Task  # Подключаем модели после инициализации db
 admin.add_view(ModelView(Task, db.session))
 
 @login_manager.user_loader
@@ -472,7 +487,5 @@ def show_delete_task():
     tasks = Task.query.all()
     return render_template('delete_task.html', tasks=tasks)
 
-
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='5000')
+    app.run(port=port)
