@@ -15,6 +15,9 @@ import pytz
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'roottask'
 
+app_test = Flask(__name__)
+app_test.config['SECRET_KEY'] = 'roottask'
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 
