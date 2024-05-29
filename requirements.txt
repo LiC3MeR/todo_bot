@@ -2,3 +2,8 @@ flask
 flask-sqlalchemy
 python-dotenv
 telebot
+pytz
+flask_bcrypt
+flask_admin
+werkzeug
+flask_login

@@ -18,6 +18,8 @@ app.config['SECRET_KEY'] = 'roottask'
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+app_test.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/task_test'
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
