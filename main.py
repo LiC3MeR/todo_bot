@@ -391,18 +391,30 @@ def task_board():
 @login_required
 def create_task():
     try:
-        task_content = request.json['task_content']
-        priority = int(request.json['priority'])
-        description = request.json['description']
-        customer = request.json['customer']
-        department = request.json['department']
-        assigned_to = int(request.json['assigned_to'])  # ID исполнителя
+        # Получаем данные из запроса
+        task_content = request.json.get('task_content')
+        priority = request.json.get('priority')
+        description = request.json.get('description')
+        customer = request.json.get('customer')
+        department = request.json.get('department')
+        assigned_to = request.json.get('assigned_to')
 
+        # Проверяем обязательные поля и их типы данных
+        if not all([task_content, priority, description, customer, department, assigned_to]):
+            return jsonify({"error": "Не все обязательные поля заполнены"}), 400
+
+        # Преобразуем при необходимости
+        try:
+            priority = int(priority)
+            assigned_to = int(assigned_to)
+        except ValueError:
+            return jsonify({"error": "Поля priority и assigned_to должны быть числовыми"}), 400
+
+        # Остальной код сохранения задачи
         task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
         unique_id = generate_unique_id(department)
         task_content_with_id = f"{unique_id}: {task_content}"
 
-        # Сохранение времени создания задачи в GMT+5
         gmt_plus_5 = pytz.timezone('Etc/GMT-5')
         created_at = datetime.now(gmt_plus_5)
 
@@ -423,7 +435,9 @@ def create_task():
         return jsonify({"message": "Задача успешно добавлена", "task_id": unique_id, "content": task_content_with_id})
     except Exception as error:
         print("Error creating task:", error)
-        return jsonify({"error": str(error)})
+        return jsonify({"error": str(error)}), 500
+
+
 
 @app.route('/users')
 @login_required
