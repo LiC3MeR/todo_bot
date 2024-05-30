@@ -15,7 +15,7 @@ import pytz
 import sys
 from sqlalchemy.orm import relationship
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 
 # Определяем конфигурацию на основе переданных аргументов или переменных окружения
 if len(sys.argv) > 1 and sys.argv[1] == 'prod':
