@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, redirect
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, redirect, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -14,6 +14,7 @@ from datetime import datetime
 import pytz
 import sys
 from sqlalchemy.orm import relationship
+from functools import wraps
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -46,7 +47,7 @@ admin.add_view(TaskAdmin(Task, db.session))
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 @login_manager.unauthorized_handler
 def unauthorized_callback():
@@ -57,6 +58,19 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "-1002075733635")
 
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
+
+def role_required(role):
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated_view(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return login_manager.unauthorized()
+            if current_user.role != role:
+                return abort(403)  # Доступ запрещен
+            return fn(*args, **kwargs)
+        return decorated_view
+    return wrapper
+
 def hash_password(password):
     # Генерируем хэш пароля
     hashed_password = generate_password_hash(password, rounds=8).decode('utf-8')
@@ -65,11 +79,12 @@ def hash_password(password):
     def __init__(self, username, password):
         self.username = username
         self.password = hash_password(password)
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-
+    role = db.Column(db.String(80), nullable=False)
     def is_active(self):
         return True
 
@@ -165,23 +180,22 @@ def update_task(task_id):
 
 @app.route('/create_user', methods=['POST'])
 @login_required
+@role_required('admin')
 def create_user():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
-        # Check if a user with that username already exists
+        role = request.form.get('role')
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash('Пользователь с таким именем уже существует', 'error')
             return redirect(url_for('users'))
-
-        # Create a new user
+        if not (username and password and role):
+            return jsonify({'error': 'Не все поля были заполнены'}), 400
         hashed_password = generate_password_hash(password)
-        new_user = User(username=username, password=hashed_password)
+        new_user = User(username=username, password=hashed_password, role=role)
         db.session.add(new_user)
         db.session.commit()
-
         flash('Пользователь успешно создан', 'success')
         return redirect(url_for('users'))
 
@@ -198,6 +212,20 @@ def login():
         else:
             flash('Incorrect username or password', 'error')
     return render_template('login.html')
+
+@app.route('/change_role', methods=['POST'])
+def change_role():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    new_role = data.get('new_role')
+
+    user = User.query.get(user_id)
+    if user:
+        user.role = new_role
+        db.session.commit()
+        return jsonify(success=True, message="Роль успешно изменена.")
+    else:
+        return jsonify(success=False, message="Пользователь не найден."), 404
 
 @app.route('/logout')
 @login_required
@@ -257,6 +285,7 @@ def index():
 
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
+@role_required('admin')
 def admin():
     if request.method == 'POST':
         task_content = request.form['task_content']
@@ -363,6 +392,7 @@ def update_task_status():
 
 @app.route('/task_board')
 @login_required
+@role_required('admin')
 def task_board():
     try:
         tasks = Task.query.all()
@@ -385,6 +415,8 @@ def task_board():
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
+
+
 
 
 @app.route('/create_task', methods=['POST'])
@@ -438,56 +470,52 @@ def create_task():
         return jsonify({"error": str(error)}), 500
 
 
-
 @app.route('/users')
 @login_required
 def users():
+    if current_user.role != 'admin':
+        abort(403)
+
     try:
         users = User.query.all()
         return render_template('register.html', users=users)
     except Exception as error:
         print("Error fetching users:", error)
-        return jsonify({"error": str(error)})
+        return jsonify({"error": str(error)}), 500
 
 @app.route('/change_password', methods=['POST'])
 @login_required
-def change_user_password():
-    if request.method == 'POST':
-        user_id = request.form.get('user_id')
-        new_password = request.form.get('new_password')
-
-        # Найти пользователя по user_id
-        user = User.query.filter_by(id=user_id).first()
-
-        if user:
-            # Изменить пароль пользователя
-            user.password = generate_password_hash(new_password)
-            db.session.commit()
-            flash('Пароль пользователя успешно изменён', 'success')  # Добавлено Flash сообщение
-        else:
-            flash('Пользователь не найден', 'error')
-
-    return redirect('/users')
+def change_password():
+    data = request.get_json()
+    user_id = data['user_id']
+    new_password = data['new_password']
+    user = User.query.get(user_id)
+    if user:
+        user.password = generate_password_hash(new_password)
+        db.session.commit()
+        return jsonify({'message': 'Password updated successfully'}), 200
+    return jsonify({'error': 'User not found'}), 404
 
 
 @app.route('/delete_user', methods=['POST'])
 @login_required
 def delete_user():
     if request.method == 'POST':
-        user_id = request.form.get('user_id')
+        data = request.get_json()
+        user_id = data.get('user_id')
 
-        # Найдите пользователя по user_id
-        user = User.query.filter_by(id=user_id).first()
-
-        if user:
-            # Удалите пользователя из базы данных
-            db.session.delete(user)
-            db.session.commit()
-            flash('Пользователь успешно удалён', 'success')
+        if user_id:
+            user = User.query.get(user_id)
+            if user:
+                db.session.delete(user)
+                db.session.commit()
+                return jsonify({'message': 'Пользователь успешно удален'}), 200
+            else:
+                return jsonify({'error': 'Пользователь не найден'}), 404
         else:
-            flash('Пользователь не найден', 'error')
-
-    return redirect('/user_list')
+            return jsonify({'error': 'Отсутствует или неверный user_id'}), 400
+    else:
+        return jsonify({'error': 'Метод не поддерживается'}), 405
 
 @app.route('/delete_task', methods=['POST'])
 def delete_task():
