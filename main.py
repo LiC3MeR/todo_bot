@@ -137,7 +137,6 @@ def generate_unique_id(department):
         return "OTH-1"
 
 @app.route('/update_task/<task_id>', methods=['POST'])
-@login_required
 def update_task(task_id):
     try:
         task = Task.query.filter_by(task_id=task_id).first()
@@ -337,19 +336,19 @@ def update_task_status():
         if isinstance(new_status, str):
             new_section_id = section_status_mapping.get(new_status)
             if new_section_id is None:
-                return jsonify({"error": "Неизвестный статус"})
+                return jsonify({"error": "Неизвестный статус"}), 400
         elif isinstance(new_status, int) and new_status in id_to_status_mapping:
             new_section_id = new_status
             new_status = id_to_status_mapping[new_section_id]
         else:
-            return jsonify({"error": "Некорректный формат статуса"})
+            return jsonify({"error": "Некорректный формат статуса"}), 400
 
         task = Task.query.filter_by(task_id=task_id).first()
         if task is None:
-            return jsonify({"error": "Задача не найдена"})
+            return jsonify({"error": "Задача не найдена"}), 404
 
-        old_status_id = section_status_mapping.get(task.status, 1)
-        old_status = id_to_status_mapping[old_status_id]
+        old_status_id = task.status
+        old_status = id_to_status_mapping.get(old_status_id, 'Неизвестный статус')
         task.status = new_section_id
         db.session.commit()
 
@@ -359,7 +358,7 @@ def update_task_status():
         return jsonify({"message": "Статус задачи изменён"})
     except Exception as error:
         print("Ошибка обновления статуса задачи:", error)
-        return jsonify({"error": str(error)})
+        return jsonify({"error": str(error)}), 500
 
 
 @app.route('/task_board')
