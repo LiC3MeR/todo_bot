@@ -224,7 +224,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect('/')
+            return redirect('/menu')
         else:
             flash('Incorrect username or password', 'error')
     return render_template('login.html')
