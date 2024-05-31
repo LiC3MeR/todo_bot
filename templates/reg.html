@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskList login</title>
+</head>
+<body>
+<style>
+    body {
+    background-color: #121212;
+            color: #e0e0e0;
+    }
+
+   .logo {
+    color: #e0e0e0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    border-radius: 110px;
+    background-color:  #2e2e2e;;
+ font-family: "Jacquard 12", system-ui;
+  font-weight: 400;
+  font-style: normal;
+    }
+
+    .from {
+                padding: 20px;
+                background-color:  #2e2e2e;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                width: 300px;
+                  max-width: 300px; /* Максимальная ширина формы */
+                     margin: auto; /* Центрирование формы по горизонтали */
+                         padding: 20px;
+                         border: 1px solid #2e2e2e; /* Граница формы */
+                             border-radius: 14px; /* Закругление углов */
+
+
+
+
+    }
+
+    .form-center {
+    text-align: center;
+    margin-top: 50px; /* Отступ сверху */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    }
+
+
+
+    .buton {
+      display: inline-block;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    background-color: #ff7b00; /* Оранжевый цвет */
+    color: white;
+    border: 2px solid transparent; /* Прозрачная граница */
+    border-radius: 30px; /* Закругленные углы */
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s; /* Плавные анимации */
+     outline: none;
+
+}
+    .buton:hover {
+    background-color: #ff9800; /* Изменение цвета при наведении */
+    border-color: #ff9800; /* Изменение цвета границы при наведении */
+}
+    .button-center {
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    }
+
+
+
+
+</style>
+<div class="logo">
+<h1>Регистрация</h1>
+</div>
+    <div class="form-center">
+        <form class="from">
+            <label>username</label><br/>
+            <input type="text" placeholder="enter username" name="username" required><br>
+            <label>email</label><br/>
+            <input type="text" placeholder="enter email" name="email" required><br>
+            <label>password</label><br/>
+            <input type="password" placeholder="enter password" name="psw" required><br>
+            <label>repeat password</label><br/>
+            <input type="repeat password" placeholder="repeat password" name="repeat password" required><br>
+
+
+        </form>
+    </div>
+        <div class="button-center" >
+            <button class="buton">Зарегистрироваться</button>
+        </div>
+
+    <script>
+
+    </script>
+</body>
+</html>
