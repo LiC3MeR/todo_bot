@@ -172,7 +172,7 @@
         <h2>Текущие задачи</h2>
         <ul id="task-list">
             {% for task in tasks %}
-                <li>{{ task.content }} - {{ task.status }} - Создана: {{ task.created_at }}</li>
+                <li>{{ task.content }} - {{ task.status }} - Создана: {{ task.created_at }} | {{ task.assignet}}</li>
             {% endfor %}
         </ul>
     </div>
@@ -197,7 +197,7 @@
                             const utcDate = new Date(task.created_at); // Указываем, что время в UTC
                             const localDate = utcDate.toLocaleString();
                             const li = document.createElement('li');
-                            li.textContent = `${task.content} - ${task.status} - Создана: ${localDate}`;
+                            li.textContent = `${task.content} - ${task.status} - Создана: ${localDate}` ${task.assignet};
                             taskList.appendChild(li);
                         });
                     })

@@ -15,6 +15,9 @@ import pytz
 import sys
 from sqlalchemy.orm import relationship
 from functools import wraps
+from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity
+from jinja2 import TemplateNotFound
+
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -44,6 +47,14 @@ admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
 # Регистрация моделей для админки
 from models import User, Task  # Подключаем модели после инициализации db
 admin.add_view(TaskAdmin(Task, db.session))
+
+@identity_loaded.connect_via(app)
+def on_identity_loaded(sender, identity):
+    identity.user = current_user
+    if hasattr(current_user, 'id'):
+        identity.provides.add(UserNeed(current_user.id))
+    if hasattr(current_user, 'role'):
+        identity.provides.add(RoleNeed(current_user.role))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -178,6 +189,10 @@ def update_task(task_id):
         print("Error updating task:", error)
         return jsonify({"error": str(error)})
 
+@app.route('/menu')
+def menu():
+    return render_template('menu.html')
+
 @app.route('/create_user', methods=['POST'])
 @login_required
 @role_required('admin')
@@ -212,6 +227,12 @@ def login():
         else:
             flash('Incorrect username or password', 'error')
     return render_template('login.html')
+
+@app.route('/admin_panel')
+@login_required
+@role_required('admin')
+def admin_panel():
+    return 'Admin Panel'
 
 @app.route('/change_role', methods=['POST'])
 def change_role():
@@ -584,6 +605,16 @@ def get_users():
 def show_delete_task():
     tasks = Task.query.all()
     return render_template('delete_task.html', tasks=tasks)
+
+def template_exists(template_name):
+    try:
+        app.jinja_env.get_template(template_name)
+        return True
+    except TemplateNotFound:
+        print(f"Template not found: {template_name}")  # Добавьте эту строку для отладки
+        return False
+
+app.jinja_env.globals['template_exists'] = template_exists
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port)
