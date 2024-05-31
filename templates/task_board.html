@@ -300,6 +300,11 @@ document.addEventListener('DOMContentLoaded', function() {
                   if (data.error) {
                       alert("Ошибка при обновлении задачи: " + data.error);
                   } else {
+                      // Обновляем задачу на клиенте
+                      updateTaskOnClient(taskId, newContent, newDescription);
+
+                      // Закрываем форму редактирования задачи
+                      this.style.display = 'none';
                       alert("Задача успешно обновлена!");
                   }
               })
@@ -317,6 +322,17 @@ document.addEventListener('DOMContentLoaded', function() {
             updateForm.style.display = 'block'; // Show update form
         });
     });
+
+    // Function to update task on the client side
+    function updateTaskOnClient(taskId, newContent, newDescription) {
+        const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+        if (taskElement) {
+            taskElement.querySelector('h5').textContent = newContent;
+            taskElement.querySelector('p').textContent = newDescription;
+        } else {
+            console.error(`Task with ID ${taskId} not found on the client side.`);
+        }
+    }
 
     // Function to update task status
     function updateTaskStatus(taskId, newStatus) {
@@ -345,71 +361,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert("Ошибка при обновлении статуса задачи: " + error.message);
         });
     }
-
-    function addTaskToColumn(taskId, taskContent, taskDescription, columnId) {
-        const columnElement = document.getElementById(columnId);
-        if (!columnElement) {
-            console.error(`Колонка с ID '${columnId}' не найдена.`);
-            return;
-        }
-
-        // Создаем HTML-разметку для новой задачи
-        const taskHtml = `
-            <div class="task" data-id="${taskId}">
-                <h5>${taskContent}</h5>
-                <p>${taskDescription}</p>
-                <button class="btn btn-sm btn-primary open-update-form" data-task-id="${taskId}">Редактировать</button>
-                <form class="update-task-form">
-                    <input type="hidden" id="update_task_id" value="${taskId}">
-                    <div class="form-group">
-                        <label for="update_content">Новое содержание</label>
-                        <input type="text" class="form-control bg-dark text-light" id="update_content" value="${taskContent}">
-                    </div>
-                    <div class="form-group">
-                        <label for="update_description">Новое описание</label>
-                        <textarea class="form-control bg-dark text-light" id="update_description">${taskDescription}</textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="update_assigned_to">Исполнитель</label>
-                        <select class="form-control bg-dark text-light" id="update_assigned_to">
-                            <option value="">Не выбран</option>
-                            <!-- Вставьте код для загрузки списка пользователей здесь, если необходимо -->
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-                </form>
-            </div>
-        `;
-
-        // Вставляем задачу в колонку
-        columnElement.insertAdjacentHTML('beforeend', taskHtml);
-
-        // Сброс формы создания задачи, если необходимо
-        document.getElementById('taskForm').reset();
-    }
-
-    // SortableJS setup for columns
-    var queueSortable = new Sortable(document.getElementById('queue'), {
-        group: 'tasks',
-        onAdd: function(evt) {
-            updateTaskStatus(evt.item.getAttribute('data-id'), 'В очереди');
-        }
-    });
-
-    var inProgressSortable = new Sortable(document.getElementById('in-progress'), {
-        group: 'tasks',
-        onAdd: function(evt) {
-            updateTaskStatus(evt.item.getAttribute('data-id'), 'В работе');
-        }
-    });
-
-    var doneSortable = new Sortable(document.getElementById('done'), {
-        group: 'tasks',
-        onAdd: function(evt) {
-            updateTaskStatus(evt.item.getAttribute('data-id'), 'Готово');
-        }
-    });
-
 });
 </script>
 
