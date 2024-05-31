@@ -234,6 +234,48 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Ошибка при загрузке пользователей:', error));
     }
 
+    // Определяем функцию для добавления задачи в колонку
+    function addTaskToColumn(taskId, taskContent, taskDescription, columnId) {
+        const columnElement = document.getElementById(columnId);
+        if (!columnElement) {
+            console.error(`Колонка с ID '${columnId}' не найдена.`);
+            return;
+        }
+
+        // Создаем HTML-разметку для новой задачи
+        const taskHtml = `
+            <div class="task" data-id="${taskId}">
+                <h5>${taskContent}</h5>
+                <p>${taskDescription}</p>
+                <button class="btn btn-sm btn-primary open-update-form" data-task-id="${taskId}">Редактировать</button>
+                <form class="update-task-form">
+                    <input type="hidden" id="update_task_id" value="${taskId}">
+                    <div class="form-group">
+                        <label for="update_content">Новое содержание</label>
+                        <input type="text" class="form-control bg-dark text-light" id="update_content" value="${taskContent}">
+                    </div>
+                    <div class="form-group">
+                        <label for="update_description">Новое описание</label>
+                        <textarea class="form-control bg-dark text-light" id="update_description">${taskDescription}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="update_assigned_to">Исполнитель</label>
+                        <select class="form-control bg-dark text-light" id="update_assigned_to">
+                            <option value="">Не выбран</option>
+                            <!-- Вставьте код для загрузки списка пользователей здесь, если необходимо -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <button type="button" class="btn btn-secondary close-update-form">Закрыть</button>
+                </form>
+            </div>
+        `;
+
+        // Вставляем задачу в колонку
+        columnElement.insertAdjacentHTML('beforeend', taskHtml);
+    }
+
+
     // Fetch users on page load
     fetchUsersAndPopulateDropdowns();
 
