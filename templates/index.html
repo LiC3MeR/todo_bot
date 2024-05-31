@@ -197,7 +197,7 @@
                             const utcDate = new Date(task.created_at); // Указываем, что время в UTC
                             const localDate = utcDate.toLocaleString();
                             const li = document.createElement('li');
-                            li.textContent = `${task.content} - ${task.status} - Создана: ${localDate}` ${task.assignet};
+                            li.textContent = `${task.content} - ${task.status} - Создана: ${localDate}`;
                             taskList.appendChild(li);
                         });
                     })
