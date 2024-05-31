@@ -114,6 +114,7 @@
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                        <button class="btn btn-secondary close-update-form">Закрыть</button>
                     </form>
                 </div>
                 {% endfor %}
@@ -320,6 +321,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const taskId = this.getAttribute('data-task-id');
             const updateForm = document.querySelector(`.task[data-id="${taskId}"] .update-task-form`);
             updateForm.style.display = 'block'; // Show update form
+        });
+    });
+
+    // Event listener to handle closing update task form
+    document.querySelectorAll('.close-update-form').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const updateForm = this.closest('.update-task-form');
+            updateForm.style.display = 'none'; // Hide update form
         });
     });
 
