@@ -190,6 +190,7 @@ def update_task(task_id):
         return jsonify({"error": str(error)})
 
 @app.route('/menu')
+@login_required
 def menu():
     return render_template('menu.html')
 
