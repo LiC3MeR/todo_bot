@@ -194,6 +194,11 @@ def update_task(task_id):
 def menu():
     return render_template('menu.html')
 
+@app.route('/register')
+@login_required
+def reg():
+    return render_template('reg.html')
+
 @app.route('/create_user', methods=['POST'])
 @login_required
 @role_required('admin')
