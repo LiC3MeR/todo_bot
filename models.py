@@ -19,9 +19,14 @@ class Task(db.Model):
     content = db.Column(db.String(200), nullable=False)
     priority = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(500), nullable=False)
-    project_id = db.Column(db.Integer, nullable=False)
+    project_id = db.Column(db.BigInteger, nullable=True)
     status = db.Column(db.Integer, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.TIMESTAMP, nullable=False, server_default=db.func.now())
+    start_time = db.Column(db.DateTime)
+    end_time = db.Column(db.DateTime)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
+    duration = db.Column(db.Integer)
 
     def __repr__(self):
         return f'<Task {self.content}>'

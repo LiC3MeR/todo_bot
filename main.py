@@ -14,10 +14,11 @@ from datetime import datetime
 import pytz
 import sys
 from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, DateTime
 from functools import wraps
 from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity
 from jinja2 import TemplateNotFound
-
+from models import User, Task
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -50,7 +51,6 @@ class TaskAdmin(ModelView):
 admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
 
 # Регистрация моделей для админки
-from models import User, Task  # Подключаем модели после инициализации db
 admin.add_view(TaskAdmin(Task, db.session))
 
 @identity_loaded.connect_via(app)
@@ -113,9 +113,32 @@ class Task(db.Model):
     project_id = db.Column(db.BigInteger, nullable=True)
     status = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.TIMESTAMP, nullable=False, server_default=db.func.now())
-
+    start_time = db.Column(db.DateTime)
+    end_time = db.Column(db.DateTime)
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
+    duration = db.Column(db.Integer)
+
+    def start_task(self):
+        self.start_time = datetime.now()
+        self.status = 2  # Предположим, что статус 2 - "В работе"
+        db.session.commit()
+
+    def end_task(self):
+        self.end_time = datetime.now()
+        self.duration = self.end_time - self.start_time
+        self.status = 3  # Предположим, что статус 3 - "Готово"
+        if self.start_time:
+            duration_seconds = (self.end_time - self.start_time).total_seconds()
+            self.duration = int(duration_seconds)
+        db.session.commit()
+
+    @staticmethod
+    def format_duration(seconds):
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        return f"{hours}ч {minutes}м {seconds}с"
 
     def __repr__(self):
         return f'<Task {self.id}>'
@@ -127,6 +150,7 @@ class Task(db.Model):
     def assign_to_user(self, user_id):
         self.assigned_to = user_id
 
+    @classmethod
     def load_user(user_id):
         return db.session.query(User).get(int(user_id))
 
@@ -167,10 +191,41 @@ def generate_unique_id(department):
         print("Error generating unique ID:", e)
         return "OTH-1"
 
+@app.route('/start_task/<int:task_id>', methods=['POST'])
+def start_task(task_id):
+    try:
+        task = Task.query.get(task_id)
+        if not task:
+            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
+
+        task.start_task()
+        return "OK", 200  # Возвращаем успешный статус HTTP
+
+    except Exception as error:
+        print("Error starting task:", error)
+        return jsonify({"error": str(error)}), 500
+
+
+
+@app.route('/end_task/<int:task_id>', methods=['POST'])
+def end_task(task_id):
+    try:
+        task = Task.query.get(task_id)
+        if not task:
+            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
+
+        task.end_task()
+        return "OK", 200  # Возвращаем успешный статус HTTP
+
+    except Exception as error:
+        print("Error ending task:", error)
+        return jsonify({"error": str(error)}), 500
+
+
 @app.route('/update_task/<task_id>', methods=['POST'])
 def update_task(task_id):
     try:
-        task = Task.query.filter_by(task_id=task_id).first()
+        task = db.session.get(Task, task_id)
         if not task:
             return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
 
@@ -423,11 +478,10 @@ def update_task_status():
         return jsonify({"error": str(error)}), 500
 
 @app.route('/task_board')
-@login_required
-@role_required('admin')
 def task_board():
     try:
         tasks = Task.query.all()
+
         section_status_mapping = {
             1: 'В очереди',
             2: 'В работе',
@@ -438,12 +492,14 @@ def task_board():
             'В работе': [],
             'Готово': []
         }
+
         for task in tasks:
             status = section_status_mapping.get(task.status, 'В очереди')
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
         return render_template('task_board.html', tasks_by_section=tasks_by_section)
+
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})

@@ -95,6 +95,15 @@
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
+                    {% if task.duration %}
+                    <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
+                    {% endif %}
+                    <form method="post" action="/start_task/{{ task.id }}">
+                        <button type="submit">Начать задачу</button>
+                    </form>
+                    <form method="post" action="/end_task/{{ task.id }}">
+                        <button type="submit">Завершить задачу</button>
+                    </form>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -128,6 +137,15 @@
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
+                    {% if task.duration %}
+                    <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
+                    {% endif %}
+                    <form method="post" action="/start_task/{{ task.id }}">
+                        <button type="submit">Начать задачу</button>
+                    </form>
+                    <form method="post" action="/end_task/{{ task.id }}">
+                        <button type="submit">Завершить задачу</button>
+                    </form>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -161,6 +179,15 @@
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
+                    {% if task.duration %}
+                    <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
+                    {% endif %}
+                    <form method="post" action="/start_task/{{ task.id }}">
+                        <button type="submit">Начать задачу</button>
+                    </form>
+                    <form method="post" action="/end_task/{{ task.id }}">
+                        <button type="submit">Завершить задачу</button>
+                    </form>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -189,6 +216,43 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const forms = document.querySelectorAll('.task-form');
+
+            forms.forEach(form => {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const taskId = form.dataset.taskId;
+                    const url = form.getAttribute('action');
+                    const method = form.getAttribute('method');
+
+                    try {
+                        const response = await fetch(url, {
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ task_id: taskId })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        alert(result.message); // Показать сообщение об успешном выполнении
+                        // Здесь можно добавить код для обновления интерфейса, если необходимо
+
+                    } catch (error) {
+                        console.error('Fetch error:', error);
+                        alert('Произошла ошибка при выполнении операции');
+                    }
+                });
+            });
+        });
+    </script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
