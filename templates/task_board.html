@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Доска задач</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
     <style>
         body {
@@ -88,7 +89,7 @@
 
         <div class="task-board">
             <div class="column" id="queue">
-                <h2 class="text-center text-light">В очереди</h2>
+                <h3 class="text-center text-light">В очереди</h3>
                 {% for task in tasks_by_section['В очереди'] %}
                 <div class="task" data-id="{{ task.task_id }}">
                     <h5>{{ task.content }}</h5>
@@ -146,6 +147,7 @@
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                        <button class="btn btn-secondary close-update-form">Закрыть</button>
                     </form>
                 </div>
                 {% endfor %}
@@ -177,6 +179,7 @@
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                        <button class="btn btn-secondary close-update-form">Закрыть</button>
                     </form>
                 </div>
                 {% endfor %}
@@ -208,9 +211,8 @@
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-
-    // Function to fetch users and populate dropdowns
+    document.addEventListener('DOMContentLoaded', function() {
+    // Fetch users and populate dropdowns
     function fetchUsersAndPopulateDropdowns() {
         fetch('/get_users')
             .then(response => response.json())
@@ -234,187 +236,237 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Ошибка при загрузке пользователей:', error));
     }
 
-    // Определяем функцию для добавления задачи в колонку
-    function addTaskToColumn(taskId, taskContent, taskDescription, columnId) {
-        const columnElement = document.getElementById(columnId);
-        if (!columnElement) {
-            console.error(`Колонка с ID '${columnId}' не найдена.`);
-            return;
-        }
+    fetchUsersAndPopulateDropdowns(); // Call the function to load users on page load
 
-        // Создаем HTML-разметку для новой задачи
-        const taskHtml = `
-            <div class="task" data-id="${taskId}">
-                <h5>${taskContent}</h5>
-                <p>${taskDescription}</p>
-                <button class="btn btn-sm btn-primary open-update-form" data-task-id="${taskId}">Редактировать</button>
-                <form class="update-task-form">
-                    <input type="hidden" id="update_task_id" value="${taskId}">
-                    <div class="form-group">
-                        <label for="update_content">Новое содержание</label>
-                        <input type="text" class="form-control bg-dark text-light" id="update_content" value="${taskContent}">
-                    </div>
-                    <div class="form-group">
-                        <label for="update_description">Новое описание</label>
-                        <textarea class="form-control bg-dark text-light" id="update_description">${taskDescription}</textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="update_assigned_to">Исполнитель</label>
-                        <select class="form-control bg-dark text-light" id="update_assigned_to">
-                            <option value="">Не выбран</option>
-                            <!-- Вставьте код для загрузки списка пользователей здесь, если необходимо -->
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-                    <button type="button" class="btn btn-secondary close-update-form">Закрыть</button>
-                </form>
-            </div>
-        `;
-
-        // Вставляем задачу в колонку
-        columnElement.insertAdjacentHTML('beforeend', taskHtml);
-    }
-
-
-    // Fetch users on page load
-    fetchUsersAndPopulateDropdowns();
-
-    // Event listener to handle task form submission
-    document.getElementById('taskForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-
-        const taskContent = document.getElementById('task_content').value;
-        const priority = document.getElementById('priority').value;
-        const description = document.getElementById('description').value;
-        const customer = document.getElementById('customer').value;
-        const department = document.getElementById('department').value;
-        const assignedTo = document.getElementById('assigned_to').value; // Selected performer
-
-        fetch('/create_task', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                task_content: taskContent,
-                priority: priority,
-                description: description,
-                customer: customer,
-                department: department,
-                assigned_to: assignedTo
-            })
-        }).then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert("Ошибка при создании задачи: " + data.error);
-                } else {
-                    // Вызов функции добавления задачи в колонку
-                    addTaskToColumn(data.task_id, taskContent, description, 'queue');
-                    document.getElementById('taskForm').reset(); // Очистка формы
-                }
-            })
-          .catch(error => {
-              alert("Ошибка при создании задачи: " + error);
-          });
-    });
-
-    // Event listener to handle update task form submission
-    document.querySelectorAll('.update-task-form').forEach(form => {
-        form.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const taskId = this.parentElement.getAttribute('data-id'); // Correctly fetch task ID
-            const newContent = this.querySelector('#update_content').value;
-            const newDescription = this.querySelector('#update_description').value;
-            const newAssignedTo = this.querySelector('#update_assigned_to').value;
-
-            fetch(`/update_task/${taskId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    content: newContent,
-                    description: newDescription,
-                    assigned_to: newAssignedTo
-                })
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.error) {
-                      alert("Ошибка при обновлении задачи: " + data.error);
-                  } else {
-                      // Обновляем задачу на клиенте
-                      updateTaskOnClient(taskId, newContent, newDescription);
-
-                      // Закрываем форму редактирования задачи
-                      this.style.display = 'none';
-                      alert("Задача успешно обновлена!");
-                  }
-              })
-              .catch(error => {
-                  alert("Ошибка при обновлении задачи: " + error);
-              });
-        });
-    });
-
-    // Event listener to toggle display of update task form
-    document.querySelectorAll('.open-update-form').forEach(button => {
-        button.addEventListener('click', function() {
-            const taskId = this.getAttribute('data-task-id');
-            const updateForm = document.querySelector(`.task[data-id="${taskId}"] .update-task-form`);
-            updateForm.style.display = 'block'; // Show update form
-        });
-    });
-
-    // Event listener to handle closing update task form
-    document.querySelectorAll('.close-update-form').forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            const updateForm = this.closest('.update-task-form');
-            updateForm.style.display = 'none'; // Hide update form
-        });
-    });
-
-    // Function to update task on the client side
-    function updateTaskOnClient(taskId, newContent, newDescription) {
-        const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
-        if (taskElement) {
-            taskElement.querySelector('h5').textContent = newContent;
-            taskElement.querySelector('p').textContent = newDescription;
-        } else {
-            console.error(`Task with ID ${taskId} not found on the client side.`);
-        }
-    }
-
-    // Function to update task status
-    function updateTaskStatus(taskId, newStatus) {
-        fetch('/update_task_status', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ task_id: taskId, status: newStatus })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(text) });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                alert("Ошибка при обновлении статуса задачи: " + data.error);
-            } else {
-                console.log("Статус задачи успешно обновлен");
-            }
-        })
-        .catch(error => {
-            console.error("Ошибка при обновлении статуса задачи:", error);
-            alert("Ошибка при обновлении статуса задачи: " + error.message);
-        });
-    }
+    // Rest of your JavaScript code...
 });
+
 </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to fetch users and populate dropdowns
+            function fetchUsersAndPopulateDropdowns() {
+                fetch('/get_users')
+                    .then(response => response.json())
+                    .then(users => {
+                        const selectAssignedTo = document.getElementById('assigned_to');
+                        selectAssignedTo.innerHTML = '';
+
+                        users.forEach(user => {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.username;
+                            selectAssignedTo.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Ошибка при загрузке пользователей:', error));
+            }
+
+            // Function to add a task to a specific column
+            function addTaskToColumn(taskId, taskContent, taskDescription, columnId) {
+                const columnElement = document.getElementById(columnId);
+                if (!columnElement) {
+                    console.error(`Колонка с ID '${columnId}' не найдена.`);
+                    return;
+                }
+
+                // Create HTML markup for the new task
+                const taskHtml = `
+                    <div class="task" data-id="${taskId}">
+                        <h5>${taskContent}</h5>
+                        <p>${taskDescription}</p>
+                        <button class="btn btn-sm btn-primary open-update-form" data-task-id="${taskId}">Редактировать</button>
+                        <form class="update-task-form">
+                            <input type="hidden" id="update_task_id" value="${taskId}">
+                            <div class="form-group">
+                                <label for="update_content">Новое содержание</label>
+                                <input type="text" class="form-control bg-dark text-light" id="update_content" value="${taskContent}">
+                            </div>
+                            <div class="form-group">
+                                <label for="update_description">Новое описание</label>
+                                <textarea class="form-control bg-dark text-light" id="update_description">${taskDescription}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="update_assigned_to">Исполнитель</label>
+                                <select class="form-control bg-dark text-light" id="update_assigned_to">
+                                    <option value="">Не выбран</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                            <button type="button" class="btn btn-secondary close-update-form">Закрыть</button>
+                        </form>
+                    </div>
+                `;
+
+                // Insert the task into the column
+                columnElement.insertAdjacentHTML('beforeend', taskHtml);
+            }
+
+            // Fetch users on page load
+            fetchUsersAndPopulateDropdowns();
+
+            // Event listener to handle task form submission
+            document.getElementById('taskForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const taskContent = document.getElementById('task_content').value;
+                const priority = document.getElementById('priority').value;
+                const description = document.getElementById('description').value;
+                const customer = document.getElementById('customer').value;
+                const department = document.getElementById('department').value;
+                const assignedTo = document.getElementById('assigned_to').value;
+
+                fetch('/create_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        task_content: taskContent,
+                        priority: priority,
+                        description: description,
+                        customer: customer,
+                        department: department,
+                        assigned_to: assignedTo
+                    })
+                }).then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert("Ошибка при создании задачи: " + data.error);
+                        } else {
+                            // Call function to add task to the 'queue' column
+                            addTaskToColumn(data.task_id, taskContent, description, 'queue');
+                            document.getElementById('taskForm').reset(); // Clear the form
+                        }
+                    })
+                    .catch(error => {
+                        alert("Ошибка при создании задачи: " + error);
+                    });
+            });
+
+            // Event listener to handle update task form submission
+            document.querySelectorAll('.update-task-form').forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+
+                    const taskId = this.parentElement.getAttribute('data-id');
+                    const newContent = this.querySelector('#update_content').value;
+                    const newDescription = this.querySelector('#update_description').value;
+                    const newAssignedTo = this.querySelector('#update_assigned_to').value;
+
+                    fetch(`/update_task/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            content: newContent,
+                            description: newDescription,
+                            assigned_to: newAssignedTo
+                        })
+                    }).then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                alert("Ошибка при обновлении задачи: " + data.error);
+                            } else {
+                                // Update task on the client side
+                                updateTaskOnClient(taskId, newContent, newDescription);
+
+                                // Close the update form
+                                this.style.display = 'none';
+                                alert("Задача успешно обновлена!");
+                            }
+                        })
+                        .catch(error => {
+                            alert("Ошибка при обновлении задачи: " + error);
+                        });
+                });
+            });
+
+            // Event listener to toggle display of update task form
+            document.querySelectorAll('.open-update-form').forEach(button => {
+                button.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    const updateForm = document.querySelector(`.task[data-id="${taskId}"] .update-task-form`);
+                    updateForm.style.display = 'block'; // Show update form
+                });
+            });
+            document.querySelectorAll('.close-update-form').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const updateForm = this.closest('.update-task-form');
+                    updateForm.style.display = 'none'; // Hide update form
+                });
+            });
+
+            // Function to update task on the client side
+            function updateTaskOnClient(taskId, newContent, newDescription) {
+                const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+                if (taskElement) {
+                    taskElement.querySelector('h5').textContent = newContent;
+                    taskElement.querySelector('p').textContent = newDescription;
+                } else {
+                    console.error(`Task with ID ${taskId} not found on the client side.`);
+                }
+            }
+
+            // Function to update task status
+            function updateTaskStatus(taskId, newStatus) {
+                fetch('/update_task_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task_id: taskId, status: newStatus })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text) });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert("Ошибка при обновлении статуса задачи: " + data.error);
+                    } else {
+                        console.log("Статус задачи успешно обновлен");
+                    }
+                })
+                .catch(error => {
+                    console.error("Ошибка при обновлении статуса задачи:", error);
+                    alert("Ошибка при обновлении статуса задачи: " + error.message);
+                });
+            }
+
+            // Initialize Sortable.js for columns
+            const columns = document.querySelectorAll('.column');
+            columns.forEach(column => {
+                new Sortable(column, {
+                    group: 'tasks',
+                    animation: 150,
+                    draggable: '.task',
+                    onEnd: function(event) {
+                        const taskId = event.item.getAttribute('data-id');
+                        const newColumnId = event.to.id;
+
+                        switch (newColumnId) {
+                            case 'queue':
+                                updateTaskStatus(taskId, 1); // 1 corresponds to 'В очереди'
+                                break;
+                            case 'in-progress':
+                                updateTaskStatus(taskId, 2); // 2 corresponds to 'В работе'
+                                break;
+                            case 'done':
+                                updateTaskStatus(taskId, 3); // 3 corresponds to 'Готово'
+                                break;
+                            default:
+                                console.error(`Unknown column ID: ${newColumnId}`);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
