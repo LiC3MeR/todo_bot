@@ -53,7 +53,7 @@
             <!-- Form content here -->
         </form>
         <div class="task-board">
-            <div class="column" id="В очереди" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div id="queue" class="column" data-status="В очереди">
                 <h2 class="text-center text-light">Нужно переобучить</h2>
                 {% for task in tasks_by_section['В очереди'] %}
                 <div class="task" draggable="true" ondragstart="drag(event)" data-id="{{ task.task_id }}">
@@ -66,7 +66,7 @@
                 </div>
                 {% endfor %}
             </div>
-            <div class="column" id="В работе" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div id="in-progress" class="column" data-status="В работе">
                 <h2 class="text-center text-light">В работе</h2>
                 {% for task in tasks_by_section['В работе'] %}
                 <div class="task" draggable="true" ondragstart="drag(event)" data-id="{{ task.task_id }}">
@@ -79,7 +79,7 @@
                 </div>
                 {% endfor %}
             </div>
-            <div class="column" id="Готово" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div id="done" class="column" data-status="Готово">
                 <h2 class="text-center text-light">Переобучен</h2>
                 {% for task in tasks_by_section['Готово'] %}
                 <div class="task" draggable="true" ondragstart="drag(event)" data-id="{{ task.task_id }}">
