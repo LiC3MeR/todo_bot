@@ -451,7 +451,7 @@ def task_board():
 @app.route('/task_nlu')
 @login_required
 @role_required('admin')
-def task_board():
+def task_board_nlu():
     try:
         tasks = Task.query.all()
         section_status_mapping = {
