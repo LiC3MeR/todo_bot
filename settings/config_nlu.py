@@ -1,0 +1,1 @@
+DATABASE_URI = 'mysql+pymysql://admin:hf3h8hews@localhost/nlu'

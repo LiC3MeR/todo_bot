@@ -22,8 +22,13 @@ from jinja2 import TemplateNotFound
 app = Flask(__name__, static_url_path='/static')
 
 # Определяем конфигурацию на основе переданных аргументов или переменных окружения
-if len(sys.argv) > 1 and sys.argv[1] == 'prod':
-    app.config.from_object(ProductionConfig)
+if len(sys.argv) > 1:
+    if sys.argv[1] == 'prod':
+        app.config.from_object(ProductionConfig)
+    elif sys.argv[1] == 'nlu':
+        app.config.from_object(NLUConfig)
+    else:
+        app.config.from_object(DevelopmentConfig)
 else:
     app.config.from_object(DevelopmentConfig)
 
@@ -443,8 +448,31 @@ def task_board():
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
 
+@app.route('/task_nlu')
+@login_required
+@role_required('admin')
+def task_board():
+    try:
+        tasks = Task.query.all()
+        section_status_mapping = {
+            1: 'В очереди',
+            2: 'В работе',
+            3: 'Готово'
+        }
+        tasks_by_section = {
+            'В очереди': [],
+            'В работе': [],
+            'Готово': []
+        }
+        for task in tasks:
+            status = section_status_mapping.get(task.status, 'В очереди')
+            if status in tasks_by_section:
+                tasks_by_section[status].append(task)
 
-
+        return render_template('task_boardnlu.html', tasks_by_section=tasks_by_section)
+    except Exception as error:
+        print("Error fetching tasks:", error)
+        return jsonify({"error": str(error)})
 
 @app.route('/create_task', methods=['POST'])
 @login_required
