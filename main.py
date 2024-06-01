@@ -383,17 +383,14 @@ def update_task_status():
         task_id = request.json['task_id']
         new_status = request.json['status']
 
-        # Mapping for status names to section IDs
         section_status_mapping = {
             'В очереди': 1,
             'В работе': 2,
             'Готово': 3
         }
 
-        # Mapping for section IDs back to status names
         id_to_status_mapping = {v: k for k, v in section_status_mapping.items()}
 
-        # Determine the new section ID based on the status provided
         if isinstance(new_status, str):
             new_section_id = section_status_mapping.get(new_status)
             if new_section_id is None:
@@ -413,14 +410,12 @@ def update_task_status():
         task.status = new_section_id
         db.session.commit()
 
-        # Отправка уведомления в телеграм
         send_telegram_message(f"Статус задачи {task_id} изменен с '{old_status}' на '{new_status}'")
 
         return jsonify({"message": "Статус задачи изменён"})
     except Exception as error:
         print("Ошибка обновления статуса задачи:", error)
         return jsonify({"error": str(error)}), 500
-
 
 @app.route('/task_board')
 @login_required
