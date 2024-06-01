@@ -4,8 +4,15 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Список пользователей</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
     <style>
         header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 99%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* необязательно: тень для эффекта возвышения */
+            z-index: 1000;
             padding: 10px;
             display: flex;
             justify-content: space-between;
@@ -60,7 +67,6 @@
         .user-menu button:hover {
             background-color: #f0f0f0;
         }
-
         body {
             font-family: Arial, sans-serif;
             background-color: #222;
@@ -216,6 +222,34 @@
             </div>
         </div>
     </header>
+        <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('indexfront.html') %}
+                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% endif %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
     <div class="container">
         <h2>Список пользователей</h2>
         <form action="/create_user" method="POST">
@@ -275,6 +309,21 @@
             <button id="generatePasswordBtn">Сгенерировать пароль</button>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
     <script>
         var modal = document.getElementById("userModal");
         var closeBtn = document.getElementsByClassName("close")[0];

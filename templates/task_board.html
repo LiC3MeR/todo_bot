@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
     <style>
         body {
             background-color: #121212;
@@ -48,8 +49,109 @@
         .update-task-form {
             display: none; /* Скрыть форму изменения задачи по умолчанию */
         }
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* необязательно: тень для эффекта возвышения */
+            z-index: 1000;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 40px; /* Установите высоту и ширину логотипа по вашему усмотрению */
+        }
+
+        #user-info {
+            display: flex;
+            align-items: center;
+            position: relative; /* Для позиционирования выпадающего меню */
+        }
+
+        #username {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        #user-avatar {
+            width: 30px; /* Установите размеры аватарки по вашему усмотрению */
+            height: 30px;
+            border-radius: 50%; /* Для круглой формы */
+            cursor: pointer;
+        }
+
+        .user-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .user-menu.show {
+            display: block;
+        }
+
+        .user-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            text-align: left;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .user-menu button:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
+    <header>
+        <div class="logo">
+            <img src="/static/logo.jpg" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username"> ROOT | {{ current_user.username }}</span>
+            <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('indexfront.html') %}
+                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% endif %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
 <body>
     <div class="container">
         <h1 class="text-center my-4">Доска задач</h1>
@@ -216,7 +318,45 @@
             </div>
         </div>
     </div>
+    <script>
+            const userAvatar = document.getElementById('user-avatar');
+            const userMenu = document.getElementById('user-menu');
+            const logoutButton = document.getElementById('logout-button');
 
+            // Показать/скрыть меню при клике на аватарку
+            userAvatar.addEventListener('click', function() {
+                userMenu.classList.toggle('show');
+            });
+
+            // Скрыть меню при клике вне его области
+            document.addEventListener('click', function(event) {
+                if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                    userMenu.classList.remove('show');
+                }
+            });
+
+            // Обработчик для кнопки "Выйти"
+            logoutButton.addEventListener('click', function() {
+                if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                    window.location.href = '/logout';
+                }
+            });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const forms = document.querySelectorAll('.task-form');
