@@ -94,6 +94,7 @@
                 <div class="task" data-id="{{ task.task_id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
+                    <p>Исполнитель: {{ task.user.username }}</p>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -126,6 +127,7 @@
                 <div class="task" data-id="{{ task.task_id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
+                    <p>Исполнитель: {{ task.user.username }}</p>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -158,6 +160,7 @@
                 <div class="task" data-id="{{ task.task_id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
+                    <p>Исполнитель: {{ task.user.username }}</p>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">

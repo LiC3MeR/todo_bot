@@ -366,12 +366,15 @@ def get_tasks():
             task_status = section_status_mapping.get(status, 'В очереди')
             # Форматирование даты создания для удобного отображения
             created_at = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Не указана"
-            assigned_to = task.assigned_to
+            assigned_user_name = None
+            if task.user:
+                assigned_user_name = task.user.username
+
             task_list.append({
                 "content": task.content,
                 "status": task_status,
                 "created_at": created_at,
-                "assigned_to": assigned_to
+                "assigned_to": assigned_user_name
             })
 
         return jsonify({"tasks": task_list})
