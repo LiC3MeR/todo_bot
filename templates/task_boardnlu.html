@@ -101,7 +101,7 @@ function allowDrop(event) {
 }
 
 function drag(event) {
-    event.dataTransfer.setData("text/plain", event.target.id);
+    event.dataTransfer.setData("text/plain", event.target.getAttribute('data-id'));
 }
 
 function drop(event) {
@@ -116,7 +116,7 @@ function drop(event) {
 
     if (targetElement && targetElement.classList.contains('column')) {
         const newStatus = targetElement.getAttribute('data-status');
-        const taskElement = document.getElementById(taskId);
+        const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
         if (taskElement) {
             targetElement.appendChild(taskElement);
             // Отправка запроса на обновление статуса задачи
@@ -124,6 +124,7 @@ function drop(event) {
         }
     }
 }
+
 
 function updateTaskStatus(taskId, newStatus) {
     fetch('/update_task_status', {
