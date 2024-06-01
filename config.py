@@ -11,3 +11,6 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.getenv('PROD_DATABASE_URI') or 'mysql+pymysql://admin:hf3h8hews@localhost/tasks'
+
+class NLUConfig(Config):
+    SQLALCHEMY_DATABASE_URI = os.getenv('NLU_DATABASE_URI') or 'mysql+pymysql://admin:hf3h8hews@localhost/nlu'
