@@ -107,13 +107,18 @@ function drag(event) {
 function drop(event) {
     event.preventDefault();
     const taskId = event.dataTransfer.getData("text/plain");
-    const targetColumn = event.target.closest('.column');
-    const newStatus = targetColumn.getAttribute('data-status');
+    let targetElement = event.target;
 
-    if (targetColumn && newStatus) {
+    // Перемещение к ближайшему элементу с классом .column, если drop произошел не на саму колонку
+    while (targetElement && !targetElement.classList.contains('column')) {
+        targetElement = targetElement.parentNode;
+    }
+
+    if (targetElement && targetElement.classList.contains('column')) {
+        const newStatus = targetElement.getAttribute('data-status');
         const taskElement = document.getElementById(taskId);
         if (taskElement) {
-            targetColumn.appendChild(taskElement);
+            targetElement.appendChild(taskElement);
             // Отправка запроса на обновление статуса задачи
             updateTaskStatus(taskId, newStatus);
         }
