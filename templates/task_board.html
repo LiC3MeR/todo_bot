@@ -165,7 +165,12 @@
                 </div>
                 <div class="form-group">
                     <label for="priority">Приоритет</label>
-                    <input type="text" class="form-control bg-dark text-light" id="priority" required>
+                    <select class="form-control bg-dark text-light" id="priority">
+                        <option value="1">Низкий</option>
+                        <option value="2">Средний</option>
+                        <option value="3">Высокий</option>
+                        <option value="4">Горит</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="description">Описание</label>
@@ -177,7 +182,13 @@
                 </div>
                 <div class="form-group">
                     <label for="department">Отдел</label>
-                    <input type="text" class="form-control bg-dark text-light" id="department" required>
+                    <select class="form-control bg-dark text-light" id="department">
+                        <option value="Разработка - FullStack">Разработка - FullStack</option>
+                        <option value="Разработка - Front">Разработка - Front</option>
+                        <option value="Разработка - Back">Разработка - Back</option>
+                        <option value="Тестировка">Тестировка</option>
+                        <option value="Прочие задачи">Прочие задачи</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="assigned_to">Исполнитель</label>
