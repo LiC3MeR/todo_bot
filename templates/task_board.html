@@ -289,8 +289,8 @@
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
-                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button>
-                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button>
+                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
+                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
                     <!-- Форма для обновления задачи -->
                     <form class="update-task-form">
