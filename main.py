@@ -191,37 +191,6 @@ def generate_unique_id(department):
         print("Error generating unique ID:", e)
         return "OTH-1"
 
-@app.route('/start_task/<int:task_id>', methods=['POST'])
-def start_task(task_id):
-    try:
-        task = Task.query.get(task_id)
-        if not task:
-            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
-
-        task.start_task()
-        return "OK", 200  # Возвращаем успешный статус HTTP
-
-    except Exception as error:
-        print("Error starting task:", error)
-        return jsonify({"error": str(error)}), 500
-
-
-
-@app.route('/end_task/<int:task_id>', methods=['POST'])
-def end_task(task_id):
-    try:
-        task = Task.query.get(task_id)
-        if not task:
-            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
-
-        task.end_task()
-        return "OK", 200  # Возвращаем успешный статус HTTP
-
-    except Exception as error:
-        print("Error ending task:", error)
-        return jsonify({"error": str(error)}), 500
-
-
 @app.route('/update_task/<task_id>', methods=['POST'])
 def update_task(task_id):
     try:
@@ -369,6 +338,39 @@ def index():
             return jsonify({"error": str(error)})
     else:
         return "Method Not Allowed", 405  # Обработка других методов не поддерживается
+
+@app.route('/start_task/<int:task_id>', methods=['POST'])
+def start_task(task_id):
+    try:
+        task = Task.query.get(task_id)
+        if not task:
+            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
+
+        task.start_task()
+        unique_id = task.task_id
+        send_telegram_message(f"Задача {unique_id} взята в работу")
+        return jsonify("OK"), 200
+
+    except Exception as error:
+        print("Error starting task:", error)
+        return jsonify({"error": str(error)}), 500
+
+@app.route('/end_task/<int:task_id>', methods=['POST'])
+def end_task(task_id):
+    try:
+        task = Task.query.get(task_id)
+        if not task:
+            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
+
+
+        task.end_task()
+        unique_id = task.task_id
+        send_telegram_message(f"Задача {unique_id} завершена")
+        return jsonify("OK"), 200
+
+    except Exception as error:
+        print("Error ending task:", error)
+        return jsonify({"error": str(error)}), 500
 
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required

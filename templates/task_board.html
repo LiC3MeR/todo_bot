@@ -200,13 +200,10 @@
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
-                    <form method="post" action="/start_task/{{ task.id }}">
-                        <button type="submit">Начать задачу</button>
-                    </form>
-                    <form method="post" action="/end_task/{{ task.id }}">
-                        <button type="submit">Завершить задачу</button>
-                    </form>
+                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button>
+                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <!-- Форма для обновления задачи -->
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
                         <div class="form-group">
@@ -235,20 +232,17 @@
             <div class="column" id="in-progress">
                 <h2 class="text-center text-light">В работе</h2>
                 {% for task in tasks_by_section['В работе'] %}
-                <div class="task" data-id="{{ task.task_id }}">
+                    <div class="task" data-id="{{ task.task_id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
-                    <form method="post" action="/start_task/{{ task.id }}">
-                        <button type="submit">Начать задачу</button>
-                    </form>
-                    <form method="post" action="/end_task/{{ task.id }}">
-                        <button type="submit">Завершить задачу</button>
-                    </form>
+                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button>
+                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <!-- Форма для обновления задачи -->
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
                         <div class="form-group">
@@ -277,20 +271,17 @@
             <div class="column" id="done">
                 <h2 class="text-center text-light">Готово</h2>
                 {% for task in tasks_by_section['Готово'] %}
-                <div class="task" data-id="{{ task.task_id }}">
+                    <div class="task" data-id="{{ task.task_id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
-                    <form method="post" action="/start_task/{{ task.id }}">
-                        <button type="submit">Начать задачу</button>
-                    </form>
-                    <form method="post" action="/end_task/{{ task.id }}">
-                        <button type="submit">Завершить задачу</button>
-                    </form>
+                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button>
+                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <!-- Форма для обновления задачи -->
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
                         <div class="form-group">
@@ -318,6 +309,87 @@
             </div>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startButtons = document.querySelectorAll('.start-task-btn');
+            const endButtons = document.querySelectorAll('.end-task-btn');
+
+            startButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    const taskId = event.target.dataset.taskId;
+                    startTask(taskId);
+                });
+            });
+
+            endButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    const taskId = event.target.dataset.taskId;
+                    endTask(taskId);
+                });
+            });
+
+            // Функция для отправки запроса на начало задачи
+            async function startTask(taskId) {
+                try {
+                    const response = await fetch(`/start_task/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    alert("Таймер запущен и задача успешно переведена в статус 'В работе'");
+                    const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+                    moveTask(taskElement, 'in-progress');
+                    window.location.reload(); // Обновляем страницу после alert
+                } catch (error) {
+                    console.error("Ошибка при старте задачи:", error);
+                    alert("Ошибка при старте задачи: " + error.message);
+                }
+            }
+
+            // Функция для отправки запроса на завершение задачи
+            async function endTask(taskId) {
+                try {
+                    const response = await fetch(`/end_task/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    console.log("Задача успешно переведена в статус 'Готово'");
+                    alert("Таймер завершён и задача успешно переведена в статус 'Готово'");
+                    const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+                    moveTask(taskElement, 'done');
+                    window.location.reload(); // Обновляем страницу после alert
+                } catch (error) {
+                    console.error("Ошибка при завершении задачи:", error);
+                    alert("Ошибка при завершении задачи: " + error.message);
+                }
+            }
+
+            // Функция для перемещения задачи в нужную колонку
+            function moveTask(taskElement, targetColumnId) {
+                const targetColumn = document.getElementById(targetColumnId);
+                if (taskElement && targetColumn) {
+                    targetColumn.appendChild(taskElement);
+                } else {
+                    console.error("Не удалось переместить задачу. Некорректные параметры.");
+                }
+            }
+        });
+    </script>
     <script>
             const userAvatar = document.getElementById('user-avatar');
             const userMenu = document.getElementById('user-menu');
@@ -629,15 +701,56 @@
                 })
                 .then(response => {
                     if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text) });
+                        throw new Error('Network response was not ok');
                     }
                     return response.json();
                 })
                 .then(data => {
-                    if (data.error) {
-                        alert("Ошибка при обновлении статуса задачи: " + data.error);
-                    } else {
-                        console.log("Статус задачи успешно обновлен");
+                    console.log("Статус задачи успешно обновлен");
+
+                    // Отправляем дополнительные запросы в зависимости от нового статуса
+                    if (newStatus === 'В работе') {
+                        fetch(`/start_task/${taskId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("Задача успешно переведена в статус 'В работе'");
+                            // Дополнительные действия при необходимости
+                        })
+                        .catch(error => {
+                            console.error("Ошибка при старте задачи:", error);
+                            alert("Ошибка при старте задачи: " + error.message);
+                        });
+                    } else if (newStatus === 'Готово') {
+                        fetch(`/end_task/${taskId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("Задача успешно переведена в статус 'Готово'");
+                            // Дополнительные действия при необходимости
+                        })
+                        .catch(error => {
+                            console.error("Ошибка при завершении задачи:", error);
+                            alert("Ошибка при завершении задачи: " + error.message);
+                        });
                     }
                 })
                 .catch(error => {
@@ -645,6 +758,7 @@
                     alert("Ошибка при обновлении статуса задачи: " + error.message);
                 });
             }
+
 
             // Initialize Sortable.js for columns
             const columns = document.querySelectorAll('.column');
