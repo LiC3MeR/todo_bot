@@ -224,7 +224,6 @@ def menu():
     return render_template('menu.html')
 
 @app.route('/register')
-@login_required
 def reg():
     return render_template('reg.html')
 

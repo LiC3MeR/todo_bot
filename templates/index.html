@@ -3,134 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
     <title>TaskList SYSADM</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        h1 {
-            color: #555;
-        }
-
-        form {
-            margin-bottom: 20px;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        input[type="text"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        input[type="submit"] {
-            background-color: #4caf50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        input[type="submit"]:hover {
-            background-color: #45a049;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        li {
-            margin-bottom: 10px;
-        }
-
-        .dark-mode {
-            background-color: #333;
-            color: #eee;
-        }
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 99%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* необязательно: тень для эффекта возвышения */
-            z-index: 1000;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo img {
-            height: 40px; /* Установите высоту и ширину логотипа по вашему усмотрению */
-        }
-
-        #user-info {
-            display: flex;
-            align-items: center;
-            position: relative; /* Для позиционирования выпадающего меню */
-        }
-
-        #username {
-            margin-right: 10px;
-            font-weight: bold;
-        }
-
-        #user-avatar {
-            width: 30px; /* Установите размеры аватарки по вашему усмотрению */
-            height: 30px;
-            border-radius: 50%; /* Для круглой формы */
-            cursor: pointer;
-        }
-
-        .user-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background-color: #fff;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-            display: none;
-        }
-
-        .user-menu.show {
-            display: block;
-        }
-
-        .user-menu button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            text-align: left;
-            border: none;
-            background: none;
-            cursor: pointer;
-        }
-
-        .user-menu button:hover {
-            background-color: #f0f0f0;
-        }
-    </style>
 </head>
 <body class="dark-mode">
     <header>
@@ -177,30 +54,29 @@
         <h1>Добавление задачи</h1>
         <form method="POST">
             <label for="task_content">Название задачи:</label><br>
-            <input type="text" id="task_content" name="task_content"><br>
-
+            <input class="form-control bg-dark text-light" type="text" id="task_content" name="task_content">
             <label for="priority">Приоритет:</label>
-            <select name="priority" id="priority">
+            <select class="form-control bg-dark text-light" name="priority" id="priority">
                 <option value="1">Низкий</option>
                 <option value="2">Средний</option>
                 <option value="3">Высокий</option>
                 <option value="4">Горит</option>
-            </select><br>
+            </select>
             <label for="department">Отдел:</label>
-            <select name="department" id="department">
+            <select class="form-control bg-dark text-light" name="department" id="department">
                 <option value="Разработка - FullStack">Разработка - FullStack</option>
                 <option value="Разработка - Front">Разработка - Front</option>
                 <option value="Разработка - Back">Разработка - Back</option>
                 <option value="Тестировка">Тестировка</option>
                 <option value="Прочие задачи">Прочие задачи</option>
-            </select><br>
-            <label for="description">Описание:</label><br>
-            <textarea id="description" name="description"></textarea><br>
+            </select>
+            <label for="description">Описание:</label>
+            <textarea class="form-control bg-dark text-light" id="description" name="description"></textarea>
 
-            <label for="customer">Заказчик:</label><br>
-            <input id="customer" type="text" name="customer"><br>
+            <label for="customer">Заказчик:</label>
+            <input class="form-control bg-dark text-light" id="customer" type="text" name="customer">
 
-            <input type="submit" value="Добавить задачу">
+            <input type="submit" class="btn btn-primary" value="Добавить задачу">
         </form>
 
         <h2>Текущие задачи</h2>
