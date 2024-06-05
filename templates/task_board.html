@@ -362,12 +362,6 @@
 
                         const result = await response.json();
                         alert(result.message); // Показать сообщение об успешном выполнении
-                        // Здесь можно добавить код для обновления интерфейса, если необходимо
-
-                    } catch (error) {
-                        console.error('Fetch error:', error);
-                        alert('Произошла ошибка при выполнении операции');
-                    }
                 });
             });
         });
@@ -524,6 +518,7 @@
                             // Call function to add task to the 'queue' column
                             addTaskToColumn(data.task_id, taskContent, description, 'queue');
                             document.getElementById('taskForm').reset(); // Clear the form
+                            window.location.reload(); // Обновляем страницу после alert
                         }
                     })
                     .catch(error => {

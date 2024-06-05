@@ -347,7 +347,8 @@ def start_task(task_id):
 
         task.start_task()
         unique_id = task.task_id
-        send_telegram_message(f"Задача {unique_id} взята в работу")
+        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
+        send_telegram_message(f" Пользователь {user_name} взял задачу {unique_id} в работу")
         return jsonify("OK"), 200
 
     except Exception as error:
@@ -364,7 +365,8 @@ def end_task(task_id):
 
         task.end_task()
         unique_id = task.task_id
-        send_telegram_message(f"Задача {unique_id} завершена")
+        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
+        send_telegram_message(f"Пользователь {user_name} завершил выполнение задачи {unique_id}")
         return jsonify("OK"), 200
 
     except Exception as error:
@@ -470,8 +472,8 @@ def update_task_status():
         old_status = id_to_status_mapping.get(old_status_id, 'Неизвестный статус')
         task.status = new_section_id
         db.session.commit()
-
-        send_telegram_message(f"Статус задачи {task_id} изменен с '{old_status}' на '{new_status}'")
+        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
+        send_telegram_message(f"Пользователь {user_name} обновил статус задачи {task_id} изменен с '{old_status}' на '{new_status}'")
 
         return jsonify({"message": "Статус задачи изменён"})
     except Exception as error:
@@ -553,7 +555,7 @@ def create_task():
             assigned_to = int(assigned_to)
         except ValueError:
             return jsonify({"error": "Поля priority и assigned_to должны быть числовыми"}), 400
-
+        tasks = Task.query.all()
         # Остальной код сохранения задачи
         task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
         unique_id = generate_unique_id(department)
@@ -561,7 +563,10 @@ def create_task():
 
         gmt_plus_5 = pytz.timezone('Etc/GMT-5')
         created_at = datetime.now(gmt_plus_5)
-
+        for task in tasks:
+            assigned_user_name = None
+            if task.user:
+                assigned_user_name = task.user.username
         new_task = Task(
             task_id=unique_id,
             content=task_content_with_id,
@@ -574,7 +579,8 @@ def create_task():
         )
         db.session.add(new_task)
         db.session.commit()
-        send_telegram_message(f"Новая задача: {task_content_with_id}")
+        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
+        send_telegram_message(f"Пользователь {user_name} добавил задачу {task_content_with_id} | Исполнитель: {assigned_user_name}")
 
         return jsonify({"message": "Задача успешно добавлена", "task_id": unique_id, "content": task_content_with_id})
     except Exception as error:
