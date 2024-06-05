@@ -372,12 +372,19 @@ def end_task(task_id):
         task.end_task()
         unique_id = task.task_id
         user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
-        send_telegram_message(f"Пользователь {user_name} завершил выполнение задачи {unique_id}")
+        formatted_duration = format_duration(task.duration)
+        send_telegram_message(f"Пользователь {user_name} завершил выполнение задачи {unique_id} за {formatted_duration}")
         return jsonify("OK"), 200
 
     except Exception as error:
         print("Error ending task:", error)
         return jsonify({"error": str(error)}), 500
+
+def format_duration(seconds):
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f"{hours}ч {minutes}м {seconds}с"
 
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
