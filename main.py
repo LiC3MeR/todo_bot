@@ -543,36 +543,33 @@ def task_board_nlu():
 @login_required
 def create_task():
     try:
-        # Получаем данные из запроса
         task_content = request.json.get('task_content')
         priority = request.json.get('priority')
         description = request.json.get('description')
         customer = request.json.get('customer')
         department = request.json.get('department')
-        assigned_to = request.json.get('assigned_to')
+        assigned_to_id = request.json.get('assigned_to')
 
-        # Проверяем обязательные поля и их типы данных
-        if not all([task_content, priority, description, customer, department, assigned_to]):
+        if not all([task_content, priority, description, customer, department, assigned_to_id]):
             return jsonify({"error": "Не все обязательные поля заполнены"}), 400
 
-        # Преобразуем при необходимости
         try:
             priority = int(priority)
-            assigned_to = int(assigned_to)
+            assigned_to_id = int(assigned_to_id)
         except ValueError:
             return jsonify({"error": "Поля priority и assigned_to должны быть числовыми"}), 400
-        tasks = Task.query.all()
-        # Остальной код сохранения задачи
+
+        assigned_user = User.query.get(assigned_to_id)
+        if not assigned_user:
+            return jsonify({"error": "Назначенный пользователь не найден"}), 404
+
         task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
         unique_id = generate_unique_id(department)
         task_content_with_id = f"{unique_id}: {task_content}"
 
         gmt_plus_5 = pytz.timezone('Etc/GMT-5')
         created_at = datetime.now(gmt_plus_5)
-        for task in tasks:
-            assigned_user_name = None
-            if task.user:
-                assigned_user_name = task.user.username
+
         new_task = Task(
             task_id=unique_id,
             content=task_content_with_id,
@@ -581,12 +578,13 @@ def create_task():
             project_id=2322606786,
             status=1,  # Default to "В очереди"
             created_at=created_at,
-            assigned_to=assigned_to
+            assigned_to=assigned_to_id
         )
         db.session.add(new_task)
         db.session.commit()
-        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
-        send_telegram_message(f"Пользователь {user_name} добавил задачу {task_content_with_id} | Исполнитель: {assigned_user_name}")
+
+        user_name = current_user.username
+        send_telegram_message(f"Пользователь {user_name} добавил задачу {task_content_with_id} | Исполнитель: {assigned_user.username}")
 
         return jsonify({"message": "Задача успешно добавлена", "task_id": unique_id, "content": task_content_with_id})
     except Exception as error:
