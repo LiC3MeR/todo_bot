@@ -15,7 +15,7 @@
             <img src="/static/logo.jpg" alt="Логотип">
         </div>
         <div id="user-info">
-            <span id="username"> ROOT | {{ current_user.username }}</span>
+            <span id="username">{{ user.display_name() }}</span>
             <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
             <div id="user-menu" class="user-menu">
                 <button id="logout-button">Выйти</button>

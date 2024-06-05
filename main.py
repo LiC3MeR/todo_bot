@@ -104,6 +104,12 @@ class User(db.Model, UserMixin):
     def is_active(self):
         return True
 
+    def display_name(self):
+        if self.role == 'admin':
+            return f'ROOT | {self.username}'
+        else:
+            return self.username
+
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.String(80), unique=True, nullable=False)
@@ -221,11 +227,11 @@ def update_task(task_id):
 @app.route('/menu')
 @login_required
 def menu():
-    return render_template('menu.html')
+    return render_template('menu.html', user=current_user)
 
 @app.route('/register')
 def reg():
-    return render_template('reg.html')
+    return render_template('reg.html', user=current_user)
 
 @app.route('/create_user', methods=['POST'])
 @login_required
@@ -331,7 +337,7 @@ def index():
         try:
             # Обработка GET запроса (получение данных)
             tasks = Task.query.all()
-            return render_template('index.html', tasks=tasks)
+            return render_template('index.html', tasks=tasks, user=current_user)
         except Exception as error:
             print("Error fetching tasks:", error)
             return jsonify({"error": str(error)})
@@ -377,36 +383,29 @@ def end_task(task_id):
 @login_required
 @role_required('admin')
 def admin():
-    if request.method == 'POST':
-        task_content = request.form['task_content']
-        priority = int(request.form['priority'])
-        description = request.form['description']
-        customer = request.form['customer']  # Добавлено поле "Заказчик"
-        department = request.form['department']
-        # Добавление имени заказчика в описание задачи
-        task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
+    try:
+        tasks = Task.query.all()
 
-        try:
-            unique_id = generate_unique_id()
-            task_content_with_id = f"{unique_id}: {task_content}"
-            # Save the task in the local database with a unique task_id
-            new_task = Task(task_id=unique_id, content=task_content_with_id, priority=priority, description=task_description, project_id=2322606786, status=1)
-            db.session.add(new_task)
-            db.session.commit()
-            # Отправка уведомления в телеграм
-            send_telegram_message(f"Новая задача: {task_content_with_id}")
-            return jsonify({"message": "Задача успешно добавлена"})
-        except Exception as error:
-            # Логирование ошибки
-            print("Error adding task:", error)
-            return jsonify({"error": str(error)})
-    else:
-        try:
-            tasks = Task.query.all()
-            return render_template('indexfront.html', tasks=tasks)
-        except Exception as error:
-            print("Error fetching tasks:", error)
-            return jsonify({"error": str(error)})
+        section_status_mapping = {
+            1: 'В очереди',
+            2: 'В работе',
+            3: 'Готово'
+        }
+        tasks_by_section = {
+            'В очереди': [],
+            'В работе': [],
+            'Готово': []
+        }
+
+        for task in tasks:
+            status = section_status_mapping.get(task.status, 'В очереди')
+            if status in tasks_by_section:
+                tasks_by_section[status].append(task)
+                return render_template('indexfront.html', user=current_user,  tasks_by_section=tasks_by_section)
+
+    except Exception as error:
+        print("Error fetching tasks:", error)
+        return jsonify({"error": str(error)})
 
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
@@ -501,7 +500,7 @@ def task_board():
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
-        return render_template('task_board.html', tasks_by_section=tasks_by_section)
+        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user)
 
     except Exception as error:
         print("Error fetching tasks:", error)
@@ -528,7 +527,7 @@ def task_board_nlu():
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
-        return render_template('task_boardnlu.html', tasks_by_section=tasks_by_section)
+        return render_template('task_boardnlu.html', tasks_by_section=tasks_by_section, user=current_user)
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
@@ -596,7 +595,7 @@ def users():
 
     try:
         users = User.query.all()
-        return render_template('register.html', users=users)
+        return render_template('register.html', users=users, user=current_user)
     except Exception as error:
         print("Error fetching users:", error)
         return jsonify({"error": str(error)}), 500
@@ -701,7 +700,7 @@ def get_users():
 @login_required
 def show_delete_task():
     tasks = Task.query.all()
-    return render_template('delete_task.html', tasks=tasks)
+    return render_template('delete_task.html', tasks=tasks, user=current_user)
 
 def template_exists(template_name):
     try:
