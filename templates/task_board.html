@@ -6,6 +6,9 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
 </head>
     <header>
@@ -80,8 +83,9 @@
                     <label for="department">Отдел</label>
                     <select class="form-control bg-dark text-light" id="department">
                         <option value="Разработка - FullStack">Разработка - FullStack</option>
-                        <option value="Разработка - Front">Разработка - Front</option>
                         <option value="Разработка - Back">Разработка - Back</option>
+                        <option value="Разработка - Front">Разработка - Front</option>
+                        <option value="DevOps">DevOps</option>
                         <option value="Тестировка">Тестировка</option>
                         <option value="Прочие задачи">Прочие задачи</option>
                     </select>
@@ -110,6 +114,35 @@
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
+
+                    <!-- Модальное окно для списка комментариев -->
+                    <div class="modal fade" id="commentsModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="commentsModalLabel{{ task.id }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="commentsModalLabel{{ task.id }}">Комментарии к задаче "{{ task.content }}"</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="commentsList{{ task.id }}">
+                                        <!-- Здесь будут отображаться комментарии -->
+                                    </div>
+                                    <hr>
+                                    <!-- Форма для добавления нового комментария -->
+                                    <form class="add-comment-form" data-task-id="{{ task.id }}">
+                                        <div class="form-group">
+                                            <textarea class="form-control" name="comment_content" rows="3" placeholder="Введите комментарий" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Добавить комментарий</button>
+                                        <div id="notification" class="error-message"></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Форма для обновления задачи -->
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -149,6 +182,34 @@
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
+
+                    <!-- Модальное окно для списка комментариев -->
+                    <div class="modal fade" id="commentsModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="commentsModalLabel{{ task.id }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="commentsModalLabel{{ task.id }}">Комментарии к задаче "{{ task.content }}"</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="commentsList{{ task.id }}">
+                                        <!-- Здесь будут отображаться комментарии -->
+                                    </div>
+                                    <hr>
+                                    <!-- Форма для добавления нового комментария -->
+                                    <form class="add-comment-form" data-task-id="{{ task.id }}">
+                                        <div class="form-group">
+                                            <textarea class="form-control" name="comment_content" rows="3" placeholder="Введите комментарий" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Добавить комментарий</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Форма для обновления задачи -->
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -188,6 +249,34 @@
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
+
+                    <!-- Модальное окно для списка комментариев -->
+                    <div class="modal fade" id="commentsModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="commentsModalLabel{{ task.id }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="commentsModalLabel{{ task.id }}">Комментарии к задаче "{{ task.content }}"</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="commentsList{{ task.id }}">
+                                        <!-- Здесь будут отображаться комментарии -->
+                                    </div>
+                                    <hr>
+                                    <!-- Форма для добавления нового комментария -->
+                                    <form class="add-comment-form" data-task-id="{{ task.id }}">
+                                        <div class="form-group">
+                                            <textarea class="form-control" name="comment_content" rows="3" placeholder="Введите комментарий" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Добавить комментарий</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Форма для обновления задачи -->
                     <form class="update-task-form">
                         <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
@@ -216,6 +305,84 @@
             </div>
         </div>
     </div>
+    <script>
+        // Обработчик нажатия кнопки "Комментарии" для загрузки списка комментариев
+        $('.open-comments-btn').click(function() {
+            var taskId = $(this).data('task-id');
+            var modalSelector = '#commentsModal' + taskId;
+            var commentsListSelector = '#commentsList' + taskId;
+
+            // Очищаем список комментариев при открытии модального окна
+            $(commentsListSelector).empty();
+
+            // Загружаем список комментариев с помощью AJAX
+            $.ajax({
+                type: 'GET',
+                url: '/task/' + taskId + '/comments',
+                success: function(comments) {
+                    comments.forEach(function(comment) {
+                        var commentHtml = '<div class="comment">';
+                        commentHtml += '<p><strong>' + comment.username + ':</strong> ' + comment.content + '</p>';
+                        commentHtml += '<p>Опубликовано: ' + comment.created_at + '</p>';
+                        commentHtml += '</div>';
+                        $(commentsListSelector).append(commentHtml);
+                    });
+                },
+                error: function(error) {
+                    console.error('Error fetching comments:', error);
+                }
+            });
+
+            // Открываем модальное окно
+            $(modalSelector).modal('show');
+        });
+
+        // Обработчик отправки формы для добавления нового комментария
+        $('.add-comment-form').submit(function(event) {
+            event.preventDefault();
+            var taskId = $(this).data('task-id');
+            var commentContent = $(this).find('textarea[name="comment_content"]').val();
+
+            $.ajax({
+                type: 'POST',
+                url: '/task/' + taskId + '/comments',
+                data: { comment_content: commentContent },
+                success: function(response) {
+                    // Если комментарий добавлен успешно, добавляем его в список без перезагрузки страницы
+                    var commentHtml = '<div class="comment">';
+                    commentHtml += '<p><strong>' + response.username + ':</strong> ' + response.content + '</p>';
+                    commentHtml += '<p>Опубликовано: ' + response.created_at + '</p>';
+                    commentHtml += '</div>';
+                    $('#commentsList' + taskId).append(commentHtml);
+
+                    // Очищаем поле ввода комментария после добавления
+                    $('.add-comment-form textarea').val('');
+                },
+                error: function(error) {
+                    console.error('Error adding comment:', error);
+                    alert('Ошибка при добавлении комментария. Пожалуйста, попробуйте снова.');
+                }
+            });
+        });
+
+        // Обработчик клика по комментарию для копирования его содержимого
+        $(document).on('click', '.comment', function() {
+            var range, selection;
+            if (window.getSelection && document.createRange) {
+                selection = window.getSelection();
+                range = document.createRange();
+                range.selectNodeContents(this);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else if (document.body.createTextRange) {
+                range = document.body.createTextRange();
+                range.moveToElementText(this);
+                range.select();
+            }
+            document.execCommand('copy');
+            selection.removeAllRanges();
+        });
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const startButtons = document.querySelectorAll('.start-task-btn');

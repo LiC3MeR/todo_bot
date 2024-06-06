@@ -92,23 +92,18 @@ def hash_password(password):
     hashed_password = generate_password_hash(password, rounds=8).decode('utf-8')
     return hashed_password
 
-    def __init__(self, username, password):
-        self.username = username
-        self.password = hash_password(password)
-
-class User(db.Model, UserMixin):
+class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(80), nullable=False)
-    def is_active(self):
-        return True
+    content = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.TIMESTAMP, nullable=False, server_default=db.func.now())
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    def display_name(self):
-        if self.role == 'admin':
-            return f'ROOT | {self.username}'
-        else:
-            return self.username
+    user = db.relationship('User', back_populates='comments')
+
+    def __repr__(self):
+        return f'<Comment {self.id} by User {self.user_id}>'
+
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -124,6 +119,7 @@ class Task(db.Model):
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
     duration = db.Column(db.Integer)
+    comments = db.relationship('Comment', backref='task_related', lazy=True)
 
     def start_task(self):
         self.start_time = datetime.now()
@@ -156,17 +152,47 @@ class Task(db.Model):
     def assign_to_user(self, user_id):
         self.assigned_to = user_id
 
+    def add_comment(self, content, user_id):
+        comment = Comment(content=content, task_id=self.id, user_id=user_id)
+        db.session.add(comment)
+        db.session.commit()
+
+    def remove_comment(self, comment_id):
+        comment = Comment.query.get(comment_id)
+        if comment:
+            db.session.delete(comment)
+            db.session.commit()
+
     @classmethod
-    def load_user(user_id):
+    def load_user(cls, user_id):
         return db.session.query(User).get(int(user_id))
 
-# Function to initialize the database
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(80), nullable=False)
+
+    comments = db.relationship('Comment', back_populates='user', lazy=True)
+
+    def is_active(self):
+        return True
+
+    def display_name(self):
+        if self.role == 'admin':
+            return f'ROOT | {self.username}'
+        else:
+            return self.username
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = hash_password(password)
+
+
 def init_db():
     with app.app_context():
         db.create_all()
 
-# Initialize the database
-init_db()
 
 # Функция для отправки уведомления в телеграм
 def send_telegram_message(message):
@@ -180,6 +206,8 @@ def generate_unique_id(department):
             prefix = 'DEV'
         elif department == 'Тестировка':
             prefix = 'TEST'
+        elif department == 'DevOps':
+            prefix = 'DPS'
         else:
             prefix = 'OTH'
 
@@ -196,6 +224,42 @@ def generate_unique_id(department):
     except Exception as e:
         print("Error generating unique ID:", e)
         return "OTH-1"
+
+
+@app.route('/task/<int:task_id>/comments', methods=['GET', 'POST'])
+@login_required
+def comments(task_id):
+    task = Task.query.get_or_404(task_id)
+
+    if request.method == 'POST':
+        content = request.form.get('comment_content')
+        if content:
+            try:
+                comment = Comment(content=content, user_id=current_user.id, task_id=task.id)
+                db.session.add(comment)
+                db.session.commit()
+
+                # Возвращаем данные комментария в формате JSON
+                comment_data = {
+                    'username': comment.user.username,
+                    'content': comment.content,
+                    'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                }
+                # Отправляем уведомление в телеграм
+                send_telegram_message(f'Добавлен новый комментарий от пользователя {comment.user.username} к задаче {task.task_id}:\n {content}')
+
+                return jsonify(comment_data), 201  # HTTP статус 201 Created для успешного создания ресурса
+            except Exception as e:
+                print(e)
+                return jsonify({'error': 'Failed to add comment'}), 400  # Пример обработки ошибки
+
+    if request.method == 'GET':
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            comments = [{'username': comment.user.username, 'content': comment.content, 'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+                        for comment in task.comments if comment.user]  # Проверяем, что comment.user не None
+            return jsonify(comments)
+
+    return render_template('comments.html', task=task, comments=task.comments)
 
 @app.route('/update_task/<task_id>', methods=['POST'])
 def update_task(task_id):
@@ -486,7 +550,28 @@ def update_task_status():
         print("Ошибка обновления статуса задачи:", error)
         return jsonify({"error": str(error)}), 500
 
+@app.route('/task/<int:task_id>/add_comment', methods=['POST'])
+@login_required
+def add_comment(task_id):
+    try:
+        task = Task.query.get_or_404(task_id)
+        comment_content = request.form.get('comment_content')
+
+        if not comment_content:
+            return jsonify({"error": "Comment content is required"}), 400
+
+        new_comment = Comment(content=comment_content, task_id=task.id, user_id=current_user.id)
+        db.session.add(new_comment)
+        db.session.commit()
+
+        return jsonify({"message": "Comment added successfully"}), 201
+
+    except Exception as error:
+        print(f"Error adding comment to task {task_id}: {error}")
+        return jsonify({"error": f"Error adding comment to task {task_id}"}), 500
+
 @app.route('/task_board')
+@login_required
 def task_board():
     try:
         tasks = Task.query.all()

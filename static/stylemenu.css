@@ -17,6 +17,38 @@ body {
     z-index: 1000;
 }
 
+        .modal-content {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        .modal-title {
+            color: #fff;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #2e2e2e;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+
+        hr {
+            border-color: #333;
+        }
+
+        .error-message {
+            color: #ff0000;
+            font-weight: bold;
+        }
+
 nav {
     background-color: #1f1f1f;
     width: 250px;
