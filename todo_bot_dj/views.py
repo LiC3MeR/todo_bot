@@ -93,7 +93,7 @@ def create_user(request):
         return redirect('users')
 
 @login_required
-def login(request):
+def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -101,7 +101,7 @@ def login(request):
 
         if user and user.check_password(password):
             login(request, user)
-            return redirect('/menu')
+            return redirect()
         else:
             messages.error(request, 'Неверное имя пользователя или пароль')
 
@@ -129,6 +129,6 @@ def change_role(request):
             return JsonResponse({"success": False, "message": "Пользователь не найден."}, status=404)
 
 @login_required
-def logout(request):
+def logout_view(request):
     logout(request)
     return redirect('/login')

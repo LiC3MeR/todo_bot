@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-7uuq_9ix+$$zfb2kbqyo2m#c(yws!e@ae)6-tsw^ftd3awgq5c
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['142.132.233.208', 'task.hiremeister.com', 'test.task.hiremeister.com']
+ALLOWED_HOSTS = ['142.132.233.208', 'task.hiremeister.com', 'test.task.hiremeister.com', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -125,7 +125,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'myapp.User'
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/menu'
 LOGIN_URL = '/login/'
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
