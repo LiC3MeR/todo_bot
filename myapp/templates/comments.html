@@ -1,0 +1,28 @@
+<!-- comments.html -->
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- метатеги, стили и т.д. -->
+</head>
+<body>
+    <h1>Комментарии для задачи: {{ task.content }}</h1>
+
+    <form method="post">
+        <div>
+            <label for="content">Комментарий:</label>
+            <textarea id="content" name="content" required></textarea>
+        </div>
+        <button type="submit">Добавить комментарий</button>
+    </form>
+
+    <h2>Список комментариев:</h2>
+    <ul>
+        {% for comment in comments %}
+            <li>
+                <strong>{{ comment.user.username }}:</strong> {{ comment.content }}
+                <small>({{ comment.created_at }})</small>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

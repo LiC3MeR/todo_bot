@@ -1,83 +1,57 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
-    <title>Доска задач</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
+    <title>Title</title>
     <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-        }
-        .column {
-            width: 30%;
-            display: inline-block;
-            vertical-align: top;
-            margin: 10px;
-            padding: 10px;
-            background-color: #1e1e1e;
-            border-radius: 5px;
-        }
-        .task {
-            border: 1px solid #333;
-            padding: 10px;
-            margin: 10px 0;
-            background-color: #2e2e2e;
-            border-radius: 5px;
-        }
-        .task h5 {
-            margin: 0;
-            color: #fff;
-        }
-        .task p {
-            margin: 5px 0 0;
-            color: #bbb;
-        }
-        .task-board {
-            display: flex;
-            justify-content: space-around;
-        }
-        .task-form {
-            margin-bottom: 20px;
-            background-color: #1e1e1e;
-            padding: 20px;
-            border-radius: 5px;
-        }
-    </style>
+body {
+      background-color: black;
+      color: #ffff;
+}
+ button {
+    border-radius: 10px;
+    color:red ;
+    transition: .2s linear;
+    background: #ffff;
+}
+
+button:hover {
+    box-shadow: 0 0 0 2px white, 0 0 0 4px #3C82F8;
+}
+        
+
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center my-4">Доска задач</h1>
 
-        <div class="task-form">
-            <h4>Создать новую задачу</h4>
-            <form id="taskForm">
-                <div class="form-group">
-                    <label for="task_content">Содержание задачи</label>
-                    <input type="text" class="form-control bg-dark text-light" id="task_content" required>
-                </div>
-                <div class="form-group">
-                    <label for="priority">Приоритет</label>
-                    <input type="text" class="form-control bg-dark text-light" id="priority" required>
-                </div>
-                <div class="form-group">
-                    <label for="description">Описание</label>
-                    <textarea class="form-control bg-dark text-light" id="description" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="customer">Заказчик</label>
-                    <input type="text" class="form-control bg-dark text-light" id="customer" required>
-                </div>
-                <div class="form-group">
-                    <label for="department">Отдел</label>
-                    <input type="text" class="form-control bg-dark text-light" id="department" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Создать задачу</button>
-            </form>
-        </div>
+<!-- start header -->
+<div id="pageHeader">
+  <div id="title">Smoke big dick</div>
+  <!-- navigation -->
+  <div class="navigation">
+      <button>reg</button>
+      <button>About</button>
+      <button>Instructors</button>
+      <button>Testimonials</button>
+      <button onclick="sendRequest()">Слить правки</button>
 
-        <div class="task-board">
+  </div>
+    <!-- работа с формой -->
+    <div>
+        <form>
+            <label for="tasckdata">Выберите приоритет задачи</label></br>
+                <select name="tasckdata" id="tasckdata">
+
+                </select>
+
+        </form>
+
+    </div>
+</div>
+<div>
+
+</div>
+ <div class="task-board">
             <div class="column" id="queue">
                 <h2 class="text-center text-light">В очереди</h2>
                 {% for task in tasks_by_section['В очереди'] %}
@@ -187,5 +161,9 @@
             }
         });
     </script>
+
 </body>
+
+
+  <footer>Alex debil</footer>
 </html>

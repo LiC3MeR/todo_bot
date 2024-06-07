@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Удаление задач</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+</head>
+    <header>
+        <div class="logo">
+            <img src="/static/logo.jpg" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username">{{ user.display_name() }}</span>
+            <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header></br>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('indexfront.html') %}
+                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% endif %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+<body>
+    <h1>Удалить задачи</h1>
+    <form id="deleteForm">
+        {% for task in tasks %}
+            <div>
+                <input type="checkbox" name="task_ids[]" value="{{ task.task_id }}"> {{ task.content }}
+            </div>
+        {% endfor %}
+        <button type="button" onclick="deleteSelectedTasks()">Удалить задачи</button>
+    </form>
+    <div id="notification">Уведомление</div>
+    <script>
+            const userAvatar = document.getElementById('user-avatar');
+            const userMenu = document.getElementById('user-menu');
+            const logoutButton = document.getElementById('logout-button');
+
+            // Показать/скрыть меню при клике на аватарку
+            userAvatar.addEventListener('click', function() {
+                userMenu.classList.toggle('show');
+            });
+
+            // Скрыть меню при клике вне его области
+            document.addEventListener('click', function(event) {
+                if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                    userMenu.classList.remove('show');
+                }
+            });
+
+            // Обработчик для кнопки "Выйти"
+            logoutButton.addEventListener('click', function() {
+                if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                    window.location.href = '/logout';
+                }
+            });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+    <script>
+        function deleteSelectedTasks() {
+            const form = document.getElementById('deleteForm');
+            const formData = new FormData(form);
+            fetch('/delete_tasks', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Network response was not ok.');
+            })
+            .then(data => {
+                showNotification(data.message);
+                // При необходимости обновите список задач на странице
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => { notification.style.display = 'none'; }, 5000);
+        }
+    </script>
+</body>
+</html>

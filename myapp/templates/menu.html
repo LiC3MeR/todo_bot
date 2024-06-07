@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu</title>
+    <link rel="stylesheet" href="{% static 'stylelogin.css' %}">
+</head>
+<body>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('indexfront.html') %}
+                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% endif %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

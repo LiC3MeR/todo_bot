@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Доска задач</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+</head>
+    <header>
+        <div class="logo">
+            <img src="/static/logo.jpg" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username">{{ user.display_name() }}</span>
+            <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('indexfront.html') %}
+                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% endif %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+<body>
+    <div class="container">
+        <h1 class="text-center my-4">Доска задач</h1>
+
+        <div class="task-form">
+            <h4>Создать новую задачу</h4>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="task_content">Содержание задачи</label>
+                    <input type="text" class="form-control bg-dark text-light" id="task_content" required>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Приоритет</label>
+                    <select class="form-control bg-dark text-light" id="priority">
+                        <option value="1">Низкий</option>
+                        <option value="2">Средний</option>
+                        <option value="3">Высокий</option>
+                        <option value="4">Горит</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="description">Описание</label>
+                    <textarea class="form-control bg-dark text-light" id="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="customer">Заказчик</label>
+                    <input type="text" class="form-control bg-dark text-light" id="customer" required>
+                </div>
+                <div class="form-group">
+                    <label for="department">Отдел</label>
+                    <select class="form-control bg-dark text-light" id="department">
+                        <option value="Разработка - FullStack">Разработка - FullStack</option>
+                        <option value="Разработка - Back">Разработка - Back</option>
+                        <option value="Разработка - Front">Разработка - Front</option>
+                        <option value="DevOps">DevOps</option>
+                        <option value="Тестировка">Тестировка</option>
+                        <option value="Прочие задачи">Прочие задачи</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="assigned_to">Исполнитель</label>
+                    <select class="form-control bg-dark text-light" id="assigned_to">
+                        <option value="">Не выбран</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Создать задачу</button>
+            </form>
+        </div>
+
+        <div class="task-board">
+            <div class="column" id="queue">
+                <h3 class="text-center text-light">В очереди</h3>
+                {% for task in tasks_by_section['В очереди'] %}
+                <div class="task" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                    <p>Исполнитель: {{ task.user.username }}</p>
+                    {% if task.duration %}
+                    <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
+                    {% endif %}
+                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
+                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
+
+                    <!-- Модальное окно для списка комментариев -->
+                    <div class="modal fade" id="commentsModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="commentsModalLabel{{ task.id }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="commentsModalLabel{{ task.id }}">Комментарии к задаче "{{ task.content }}"</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="commentsList{{ task.id }}">
+                                        <!-- Здесь будут отображаться комментарии -->
+                                    </div>
+                                    <hr>
+                                    <!-- Форма для добавления нового комментария -->
+                                    <form class="add-comment-form" data-task-id="{{ task.id }}">
+                                        <div class="form-group">
+                                            <textarea class="form-control" name="comment_content" rows="3" placeholder="Введите комментарий" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Добавить комментарий</button>
+                                        <div id="notification" class="error-message"></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Форма для обновления задачи -->
+                    <form class="update-task-form">
+                        <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
+                        <div class="form-group">
+                            <label for="update_content">Новое содержание</label>
+                            <input type="text" class="form-control bg-dark text-light" id="update_content" value="{{ task.content }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="update_description">Новое описание</label>
+                            <textarea class="form-control bg-dark text-light" id="update_description">{{ task.description }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="update_assigned_to">Исполнитель</label>
+                            <select class="form-control bg-dark text-light" id="update_assigned_to">
+                                <option value="">Не выбран</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if task.assigned_to == user.id %} selected {% endif %}>{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                        <button class="btn btn-secondary close-update-form">Закрыть</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="column" id="in-progress">
+                <h2 class="text-center text-light">В работе</h2>
+                {% for task in tasks_by_section['В работе'] %}
+                    <div class="task" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                    <p>Исполнитель: {{ task.user.username }}</p>
+                    {% if task.duration %}
+                    <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
+                    {% endif %}
+                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
+                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
+
+                    <!-- Модальное окно для списка комментариев -->
+                    <div class="modal fade" id="commentsModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="commentsModalLabel{{ task.id }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="commentsModalLabel{{ task.id }}">Комментарии к задаче "{{ task.content }}"</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="commentsList{{ task.id }}">
+                                        <!-- Здесь будут отображаться комментарии -->
+                                    </div>
+                                    <hr>
+                                    <!-- Форма для добавления нового комментария -->
+                                    <form class="add-comment-form" data-task-id="{{ task.id }}">
+                                        <div class="form-group">
+                                            <textarea class="form-control" name="comment_content" rows="3" placeholder="Введите комментарий" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Добавить комментарий</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Форма для обновления задачи -->
+                    <form class="update-task-form">
+                        <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
+                        <div class="form-group">
+                            <label for="update_content">Новое содержание</label>
+                            <input type="text" class="form-control bg-dark text-light" id="update_content" value="{{ task.content }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="update_description">Новое описание</label>
+                            <textarea class="form-control bg-dark text-light" id="update_description">{{ task.description }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="update_assigned_to">Исполнитель</label>
+                            <select class="form-control bg-dark text-light" id="update_assigned_to">
+                                <option value="">Не выбран</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if task.assigned_to == user.id %} selected {% endif %}>{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                        <button class="btn btn-secondary close-update-form">Закрыть</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="column" id="done">
+                <h2 class="text-center text-light">Готово</h2>
+                {% for task in tasks_by_section['Готово'] %}
+                    <div class="task" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                    <p>Исполнитель: {{ task.user.username }}</p>
+                    {% if task.duration %}
+                    <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
+                    {% endif %}
+                    <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
+                    <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
+
+                    <!-- Модальное окно для списка комментариев -->
+                    <div class="modal fade" id="commentsModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="commentsModalLabel{{ task.id }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="commentsModalLabel{{ task.id }}">Комментарии к задаче "{{ task.content }}"</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="commentsList{{ task.id }}">
+                                        <!-- Здесь будут отображаться комментарии -->
+                                    </div>
+                                    <hr>
+                                    <!-- Форма для добавления нового комментария -->
+                                    <form class="add-comment-form" data-task-id="{{ task.id }}">
+                                        <div class="form-group">
+                                            <textarea class="form-control" name="comment_content" rows="3" placeholder="Введите комментарий" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Добавить комментарий</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Форма для обновления задачи -->
+                    <form class="update-task-form">
+                        <input type="hidden" id="update_task_id" value="{{ task.task_id }}">
+                        <div class="form-group">
+                            <label for="update_content">Новое содержание</label>
+                            <input type="text" class="form-control bg-dark text-light" id="update_content" value="{{ task.content }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="update_description">Новое описание</label>
+                            <textarea class="form-control bg-dark text-light" id="update_description">{{ task.description }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="update_assigned_to">Исполнитель</label>
+                            <select class="form-control bg-dark text-light" id="update_assigned_to">
+                                <option value="">Не выбран</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if task.assigned_to == user.id %} selected {% endif %}>{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                        <button class="btn btn-secondary close-update-form">Закрыть</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script>
+        // Обработчик нажатия кнопки "Комментарии" для загрузки списка комментариев
+        $('.open-comments-btn').click(function() {
+            var taskId = $(this).data('task-id');
+            var modalSelector = '#commentsModal' + taskId;
+            var commentsListSelector = '#commentsList' + taskId;
+
+            // Очищаем список комментариев при открытии модального окна
+            $(commentsListSelector).empty();
+
+            // Загружаем список комментариев с помощью AJAX
+            $.ajax({
+                type: 'GET',
+                url: '/task/' + taskId + '/comments',
+                success: function(comments) {
+                    comments.forEach(function(comment) {
+                        var commentHtml = '<div class="comment">';
+                        commentHtml += '<p><strong>' + comment.username + ':</strong> ' + comment.content + '</p>';
+                        commentHtml += '<p>Опубликовано: ' + comment.created_at + '</p>';
+                        commentHtml += '</div>';
+                        $(commentsListSelector).append(commentHtml);
+                    });
+                },
+                error: function(error) {
+                    console.error('Error fetching comments:', error);
+                }
+            });
+
+            // Открываем модальное окно
+            $(modalSelector).modal('show');
+        });
+
+        // Обработчик отправки формы для добавления нового комментария
+        $('.add-comment-form').submit(function(event) {
+            event.preventDefault();
+            var taskId = $(this).data('task-id');
+            var commentContent = $(this).find('textarea[name="comment_content"]').val();
+
+            $.ajax({
+                type: 'POST',
+                url: '/task/' + taskId + '/comments',
+                data: { comment_content: commentContent },
+                success: function(response) {
+                    // Если комментарий добавлен успешно, добавляем его в список без перезагрузки страницы
+                    var commentHtml = '<div class="comment">';
+                    commentHtml += '<p><strong>' + response.username + ':</strong> ' + response.content + '</p>';
+                    commentHtml += '<p>Опубликовано: ' + response.created_at + '</p>';
+                    commentHtml += '</div>';
+                    $('#commentsList' + taskId).append(commentHtml);
+
+                    // Очищаем поле ввода комментария после добавления
+                    $('.add-comment-form textarea').val('');
+                },
+                error: function(error) {
+                    console.error('Error adding comment:', error);
+                    alert('Ошибка при добавлении комментария. Пожалуйста, попробуйте снова.');
+                }
+            });
+        });
+
+        // Обработчик клика по комментарию для копирования его содержимого
+        $(document).on('click', '.comment', function() {
+            var range, selection;
+            if (window.getSelection && document.createRange) {
+                selection = window.getSelection();
+                range = document.createRange();
+                range.selectNodeContents(this);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else if (document.body.createTextRange) {
+                range = document.body.createTextRange();
+                range.moveToElementText(this);
+                range.select();
+            }
+            document.execCommand('copy');
+            selection.removeAllRanges();
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startButtons = document.querySelectorAll('.start-task-btn');
+            const endButtons = document.querySelectorAll('.end-task-btn');
+
+            startButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    const taskId = event.target.dataset.taskId;
+                    startTask(taskId);
+                });
+            });
+
+            endButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    const taskId = event.target.dataset.taskId;
+                    endTask(taskId);
+                });
+            });
+
+            // Функция для отправки запроса на начало задачи
+            async function startTask(taskId) {
+                try {
+                    const response = await fetch(`/start_task/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    alert("Таймер запущен и задача успешно переведена в статус 'В работе'");
+                    const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+                    moveTask(taskElement, 'in-progress');
+                    window.location.reload(); // Обновляем страницу после alert
+                } catch (error) {
+                    console.error("Ошибка при старте задачи:", error);
+                    alert("Ошибка при старте задачи: " + error.message);
+                }
+            }
+
+            // Функция для отправки запроса на завершение задачи
+            async function endTask(taskId) {
+                try {
+                    const response = await fetch(`/end_task/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    console.log("Задача успешно переведена в статус 'Готово'");
+                    alert("Таймер завершён и задача успешно переведена в статус 'Готово'");
+                    const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+                    moveTask(taskElement, 'done');
+                    window.location.reload(); // Обновляем страницу после alert
+                } catch (error) {
+                    console.error("Ошибка при завершении задачи:", error);
+                    alert("Ошибка при завершении задачи: " + error.message);
+                }
+            }
+
+            // Функция для перемещения задачи в нужную колонку
+            function moveTask(taskElement, targetColumnId) {
+                const targetColumn = document.getElementById(targetColumnId);
+                if (taskElement && targetColumn) {
+                    targetColumn.appendChild(taskElement);
+                } else {
+                    console.error("Не удалось переместить задачу. Некорректные параметры.");
+                }
+            }
+        });
+    </script>
+    <script>
+            const userAvatar = document.getElementById('user-avatar');
+            const userMenu = document.getElementById('user-menu');
+            const logoutButton = document.getElementById('logout-button');
+
+            // Показать/скрыть меню при клике на аватарку
+            userAvatar.addEventListener('click', function() {
+                userMenu.classList.toggle('show');
+            });
+
+            // Скрыть меню при клике вне его области
+            document.addEventListener('click', function(event) {
+                if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                    userMenu.classList.remove('show');
+                }
+            });
+
+            // Обработчик для кнопки "Выйти"
+            logoutButton.addEventListener('click', function() {
+                if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                    window.location.href = '/logout';
+                }
+            });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const forms = document.querySelectorAll('.task-form');
+
+            forms.forEach(form => {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const taskId = form.dataset.taskId;
+                    const url = form.getAttribute('action');
+                    const method = form.getAttribute('method');
+
+                    try {
+                        const response = await fetch(url, {
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ task_id: taskId })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        alert(result.message); // Показать сообщение об успешном выполнении
+                });
+            });
+        });
+    </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function fetchUsers() {
+            fetch('/get_users')
+                .then(response => response.json())
+                .then(data => {
+                    const selectAssignedTo = document.getElementById('assigned_to');
+                    selectAssignedTo.innerHTML = ''; //
+
+                    data.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.username;
+                        selectAssignedTo.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Ошибка при загрузке пользователей:', error));
+        }
+
+        fetchUsers(); // Вызываем функцию для загрузки пользователей при загрузке страницы
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Fetch users and populate dropdowns
+    function fetchUsersAndPopulateDropdowns() {
+        fetch('/get_users')
+            .then(response => response.json())
+            .then(users => {
+                document.querySelectorAll('.update-task-form').forEach(form => {
+                    const taskId = form.parentElement.getAttribute('data-id');
+                    const selectAssignedTo = form.querySelector('#update_assigned_to');
+                    selectAssignedTo.innerHTML = ''; // Clear current options
+
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.username;
+                        if (user.id == taskId) { // Check if the user ID matches the current task's assigned_to
+                            option.selected = true; // Mark as selected if it matches
+                        }
+                        selectAssignedTo.appendChild(option);
+                    });
+                });
+            })
+            .catch(error => console.error('Ошибка при загрузке пользователей:', error));
+    }
+
+    fetchUsersAndPopulateDropdowns(); // Call the function to load users on page load
+
+    // Rest of your JavaScript code...
+});
+
+</script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to fetch users and populate dropdowns
+            function fetchUsersAndPopulateDropdowns() {
+                fetch('/get_users')
+                    .then(response => response.json())
+                    .then(users => {
+                        const selectAssignedTo = document.getElementById('assigned_to');
+                        selectAssignedTo.innerHTML = '';
+
+                        users.forEach(user => {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.username;
+                            selectAssignedTo.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Ошибка при загрузке пользователей:', error));
+            }
+
+            // Function to add a task to a specific column
+            function addTaskToColumn(taskId, taskContent, taskDescription, columnId) {
+                const columnElement = document.getElementById(columnId);
+                if (!columnElement) {
+                    console.error(`Колонка с ID '${columnId}' не найдена.`);
+                    return;
+                }
+
+                // Create HTML markup for the new task
+                const taskHtml = `
+                    <div class="task" data-id="${taskId}">
+                        <h5>${taskContent}</h5>
+                        <p>${taskDescription}</p>
+                        <button class="btn btn-sm btn-primary open-update-form" data-task-id="${taskId}">Редактировать</button>
+                        <form class="update-task-form">
+                            <input type="hidden" id="update_task_id" value="${taskId}">
+                            <div class="form-group">
+                                <label for="update_content">Новое содержание</label>
+                                <input type="text" class="form-control bg-dark text-light" id="update_content" value="${taskContent}">
+                            </div>
+                            <div class="form-group">
+                                <label for="update_description">Новое описание</label>
+                                <textarea class="form-control bg-dark text-light" id="update_description">${taskDescription}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="update_assigned_to">Исполнитель</label>
+                                <select class="form-control bg-dark text-light" id="update_assigned_to">
+                                    <option value="">Не выбран</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                            <button type="button" class="btn btn-secondary close-update-form">Закрыть</button>
+                        </form>
+                    </div>
+                `;
+
+                // Insert the task into the column
+                columnElement.insertAdjacentHTML('beforeend', taskHtml);
+            }
+
+            // Fetch users on page load
+            fetchUsersAndPopulateDropdowns();
+
+            // Event listener to handle task form submission
+            document.getElementById('taskForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const taskContent = document.getElementById('task_content').value;
+                const priority = document.getElementById('priority').value;
+                const description = document.getElementById('description').value;
+                const customer = document.getElementById('customer').value;
+                const department = document.getElementById('department').value;
+                const assignedTo = document.getElementById('assigned_to').value;
+
+                fetch('/create_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        task_content: taskContent,
+                        priority: priority,
+                        description: description,
+                        customer: customer,
+                        department: department,
+                        assigned_to: assignedTo
+                    })
+                }).then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert("Ошибка при создании задачи: " + data.error);
+                        } else {
+                            // Call function to add task to the 'queue' column
+                            addTaskToColumn(data.task_id, taskContent, description, 'queue');
+                            document.getElementById('taskForm').reset(); // Clear the form
+                            window.location.reload(); // Обновляем страницу после alert
+                        }
+                    })
+                    .catch(error => {
+                        alert("Ошибка при создании задачи: " + error);
+                    });
+            });
+
+            // Event listener to handle update task form submission
+            document.querySelectorAll('.update-task-form').forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+
+                    const taskId = this.parentElement.getAttribute('data-id');
+                    const newContent = this.querySelector('#update_content').value;
+                    const newDescription = this.querySelector('#update_description').value;
+                    const newAssignedTo = this.querySelector('#update_assigned_to').value;
+
+                    fetch(`/update_task/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            content: newContent,
+                            description: newDescription,
+                            assigned_to: newAssignedTo
+                        })
+                    }).then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                alert("Ошибка при обновлении задачи: " + data.error);
+                            } else {
+                                // Update task on the client side
+                                updateTaskOnClient(taskId, newContent, newDescription);
+
+                                // Close the update form
+                                this.style.display = 'none';
+                                alert("Задача успешно обновлена!");
+                            }
+                        })
+                        .catch(error => {
+                            alert("Ошибка при обновлении задачи: " + error);
+                        });
+                });
+            });
+
+            // Event listener to toggle display of update task form
+            document.querySelectorAll('.open-update-form').forEach(button => {
+                button.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    const updateForm = document.querySelector(`.task[data-id="${taskId}"] .update-task-form`);
+                    updateForm.style.display = 'block'; // Show update form
+                });
+            });
+            document.querySelectorAll('.close-update-form').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const updateForm = this.closest('.update-task-form');
+                    updateForm.style.display = 'none'; // Hide update form
+                });
+            });
+
+            // Function to update task on the client side
+            function updateTaskOnClient(taskId, newContent, newDescription) {
+                const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+                if (taskElement) {
+                    taskElement.querySelector('h5').textContent = newContent;
+                    taskElement.querySelector('p').textContent = newDescription;
+                } else {
+                    console.error(`Task with ID ${taskId} not found on the client side.`);
+                }
+            }
+
+            // Function to update task status
+            function updateTaskStatus(taskId, newStatus) {
+                fetch('/update_task_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task_id: taskId, status: newStatus })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Статус задачи успешно обновлен");
+
+                    // Отправляем дополнительные запросы в зависимости от нового статуса
+                    if (newStatus === 'В работе') {
+                        fetch(`/start_task/${taskId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("Задача успешно переведена в статус 'В работе'");
+                            // Дополнительные действия при необходимости
+                        })
+                        .catch(error => {
+                            console.error("Ошибка при старте задачи:", error);
+                            alert("Ошибка при старте задачи: " + error.message);
+                        });
+                    } else if (newStatus === 'Готово') {
+                        fetch(`/end_task/${taskId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("Задача успешно переведена в статус 'Готово'");
+                            // Дополнительные действия при необходимости
+                        })
+                        .catch(error => {
+                            console.error("Ошибка при завершении задачи:", error);
+                            alert("Ошибка при завершении задачи: " + error.message);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Ошибка при обновлении статуса задачи:", error);
+                    alert("Ошибка при обновлении статуса задачи: " + error.message);
+                });
+            }
+
+
+            // Initialize Sortable.js for columns
+            const columns = document.querySelectorAll('.column');
+            columns.forEach(column => {
+                new Sortable(column, {
+                    group: 'tasks',
+                    animation: 150,
+                    draggable: '.task',
+                    onEnd: function(event) {
+                        const taskId = event.item.getAttribute('data-id');
+                        const newColumnId = event.to.id;
+
+                        switch (newColumnId) {
+                            case 'queue':
+                                updateTaskStatus(taskId, 1); // 1 corresponds to 'В очереди'
+                                break;
+                            case 'in-progress':
+                                updateTaskStatus(taskId, 2); // 2 corresponds to 'В работе'
+                                break;
+                            case 'done':
+                                updateTaskStatus(taskId, 3); // 3 corresponds to 'Готово'
+                                break;
+                            default:
+                                console.error(`Unknown column ID: ${newColumnId}`);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

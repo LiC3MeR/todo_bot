@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'stylelogin.css' %}">
+    <title>Вход</title>
+</head>
+<body>
+    <form method="POST">
+        {% csrf_token %}
+        <h2>Вход</h2>
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <label for="username">Логин:</label>
+        <input type="text" id="username" name="username">
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password">
+        <input type="submit" value="Войти">
+    </form>
+</body>
+</html>

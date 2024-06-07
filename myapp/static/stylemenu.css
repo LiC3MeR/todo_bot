@@ -1,0 +1,273 @@
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.menu {
+    background-color: #1f1f1f;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -250px; /* начальное положение скрыто за экраном */
+    transition: left 0.3s;
+    z-index: 1000;
+}
+
+        .modal-content {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        .modal-title {
+            color: #fff;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #2e2e2e;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+
+        hr {
+            border-color: #333;
+        }
+
+        .error-message {
+            color: #ff0000;
+            font-weight: bold;
+        }
+
+nav {
+    background-color: #1f1f1f;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -250px; /* скрыто за левым краем */
+    transition: left 0.3s; /* плавное перемещение */
+    z-index: 1000;
+}
+
+.menu-toggle {
+    cursor: pointer;
+    color: #e0e0e0;
+    position: fixed;
+    left: 80px; /* начальное положение кнопки */
+    top: 10px;
+    font-size: 24px;
+    z-index: 1500; /* гарантируем, что кнопка находится поверх меню */
+    transition: left 0.3s; /* плавное перемещение кнопки */
+}
+
+.menu.open .menu-toggle {
+    left: 260px; /* кнопка перемещается вправо вместе с меню */
+}
+
+ul.menu {
+    list-style: none;
+    padding: 20px;
+    margin: 0;
+    height: 100%;
+    overflow: auto;
+}
+
+ul.menu li {
+    padding: 10px 0;
+}
+
+ul.menu li a {
+    text-decoration: none;
+    color: #e0e0e0;
+    display: block;
+}
+
+ul.menu li a:hover {
+    background-color: #333;
+}
+
+.menu.open {
+    left: 0;
+}
+
+.content {
+    margin-left: 20px; /* Optional for content spacing */
+    padding: 10px;
+}
+
+/* Общие стили для меню */
+.menu ul {
+    list-style: none; /* Убираем стандартные маркеры списка */
+    padding: 0;
+    margin: 0;
+}
+
+.menu li {
+    border-bottom: 1px solid #333; /* Граница между элементами меню */
+}
+
+.menu a {
+    display: block; /* Сделать ссылку блочным элементом */
+    padding: 10px 20px; /* Паддинг для удобства клика */
+    color: #ddd; /* Цвет текста */
+    text-decoration: none; /* Убрать подчёркивание */
+    transition: background-color 0.3s, color 0.3s; /* Плавный переход цвета */
+}
+
+.menu a:hover, .menu a:focus {
+    background-color: #505050; /* Цвет фона при наведении */
+    color: #fff; /* Цвет текста при наведении */
+}
+
+.column {
+    width: 30%;
+    display: inline-block;
+    vertical-align: top;
+    margin: 10px;
+    padding: 10px;
+    background-color: #1e1e1e;
+    border-radius: 5px;
+}
+.task {
+    border: 1px solid #333;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #2e2e2e;
+    border-radius: 5px;
+}
+.task h5 {
+    margin: 0;
+    color: #fff;
+}
+.task p {
+    margin: 5px 0 0;
+    color: #bbb;
+}
+.task-board {
+    display: flex;
+    justify-content: space-around;
+}
+.task-form {
+    margin-bottom: 20px;
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+form {
+    margin-bottom: 20px;
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.update-task-form {
+    display: none; /* Скрыть форму изменения задачи по умолчанию */
+}
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 99%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* необязательно: тень для эффекта возвышения */
+    z-index: 1000;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo img {
+    height: 40px; /* Установите высоту и ширину логотипа по вашему усмотрению */
+}
+
+#user-info {
+    display: flex;
+    align-items: center;
+    position: relative; /* Для позиционирования выпадающего меню */
+}
+
+#username {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+#user-avatar {
+    width: 30px; /* Установите размеры аватарки по вашему усмотрению */
+    height: 30px;
+    border-radius: 50%; /* Для круглой формы */
+    cursor: pointer;
+}
+
+.user-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    display: none;
+}
+
+.user-menu.show {
+    display: block;
+}
+
+.user-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    text-align: left;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.user-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+input[type="text"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+        h1 {
+            color: #555;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        #notification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Board</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .task-board {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .column {
+            width: 30%;
+            background-color: #1e1e1e;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .task {
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #2e2e2e;
+            border-radius: 5px;
+        }
+        .task h5 {
+            margin: 0;
+            color: #fff;
+        }
+        .task p {
+            margin: 5px 0 0;
+            color: #bbb;
+        }
+        .task-form {
+            margin-bottom: 20px;
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .update-task-form {
+            display: none; /* Скрыть форму изменения задачи по умолчанию */
+        }
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* необязательно: тень для эффекта возвышения */
+            z-index: 1000;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 40px; /* Установите высоту и ширину логотипа по вашему усмотрению */
+        }
+
+        #user-info {
+            display: flex;
+            align-items: center;
+            position: relative; /* Для позиционирования выпадающего меню */
+        }
+
+        #username {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        #user-avatar {
+            width: 30px; /* Установите размеры аватарки по вашему усмотрению */
+            height: 30px;
+            border-radius: 50%; /* Для круглой формы */
+            cursor: pointer;
+        }
+
+        .user-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .user-menu.show {
+            display: block;
+        }
+
+        .user-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            text-align: left;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .user-menu button:hover {
+
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+    <header>
+        <div class="logo">
+            <img src="/static/logo.jpg" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username"> ROOT | {{ current_user.username }}</span>
+            <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header>
+<body>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="container">
+        <form id="taskForm" class="task-form">
+            <!-- Form content here -->
+        </form>
+        <div class="task-board">
+            <div id="queue" class="column" data-status="В очереди">
+                <h2 class="text-center text-light">Нужно переобучить</h2>
+                {% for task in tasks_by_section['В очереди'] %}
+                <div class="task" draggable="true" ondragstart="drag(event)" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <form class="update-task-form">
+                        <!-- Form content here -->
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            <div id="in-progress" class="column" data-status="В работе">
+                <h2 class="text-center text-light">В работе</h2>
+                {% for task in tasks_by_section['В работе'] %}
+                <div class="task" draggable="true" ondragstart="drag(event)" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <form class="update-task-form">
+                        <!-- Form content here -->
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            <div id="done" class="column" data-status="Готово">
+                <h2 class="text-center text-light">Переобучен</h2>
+                {% for task in tasks_by_section['Готово'] %}
+                <div class="task" draggable="true" ondragstart="drag(event)" data-id="{{ task.task_id }}">
+                    <h5>{{ task.content }}</h5>
+                    <p>{{ task.description }}</p>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <form class="update-task-form">
+                        <!-- Form content here -->
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+    <script>
+function allowDrop(event) {
+    event.preventDefault();
+}
+
+function drag(event) {
+    event.dataTransfer.setData("text/plain", event.target.getAttribute('data-id'));
+}
+
+function drop(event) {
+    event.preventDefault();
+    const taskId = event.dataTransfer.getData("text/plain");
+    let targetElement = event.target;
+
+    // Перемещение к ближайшему элементу с классом .column, если drop произошел не на саму колонку
+    while (targetElement && !targetElement.classList.contains('column')) {
+        targetElement = targetElement.parentNode;
+    }
+
+    if (targetElement && targetElement.classList.contains('column')) {
+        const newStatus = targetElement.getAttribute('data-status');
+        const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
+        if (taskElement) {
+            targetElement.appendChild(taskElement);
+            // Отправка запроса на обновление статуса задачи
+            updateTaskStatus(taskId, newStatus);
+        }
+    }
+}
+
+
+function updateTaskStatus(taskId, newStatus) {
+    fetch('/update_task_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ task_id: taskId, status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error('Error:', data.error);
+        } else {
+            console.log('Success:', data.message);
+        }
+    })
+    .catch((error) => {
+        console.error('Fetch Error:', error);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const tasks = document.querySelectorAll('.task');
+    tasks.forEach(task => {
+        task.setAttribute('draggable', true);
+        task.addEventListener('dragstart', drag);
+    });
+
+    const columns = document.querySelectorAll('.column');
+    columns.forEach(column => {
+        column.addEventListener('dragover', allowDrop);
+        column.addEventListener('drop', drop);
+    });
+});
+
+    </script>
+</body>
+</html>

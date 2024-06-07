@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.10.2/Sortable.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+    <title>TaskList SYSADM</title>
+</head>
+<body class="dark-mode">
+    <header>
+        <div class="logo">
+            <img src="/static/logo.jpg" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username">{{ user.display_name() }}</span>
+            <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('indexfront.html') %}
+                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% endif %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="container">
+        <h1>Добавление задачи</h1>
+        <form method="POST">
+            <label for="task_content">Название задачи:</label><br>
+            <input class="form-control bg-dark text-light" type="text" id="task_content" name="task_content">
+            <label for="priority">Приоритет:</label>
+            <select class="form-control bg-dark text-light" name="priority" id="priority">
+                <option value="1">Низкий</option>
+                <option value="2">Средний</option>
+                <option value="3">Высокий</option>
+                <option value="4">Горит</option>
+            </select>
+            <label for="department">Отдел:</label>
+            <select class="form-control bg-dark text-light" name="department" id="department">
+                <option value="Разработка - FullStack">Разработка - FullStack</option>
+                <option value="Разработка - Front">Разработка - Front</option>
+                <option value="Разработка - Back">Разработка - Back</option>
+                <option value="Тестировка">Тестировка</option>
+                <option value="Прочие задачи">Прочие задачи</option>
+            </select>
+            <label for="description">Описание:</label>
+            <textarea class="form-control bg-dark text-light" id="description" name="description"></textarea>
+
+            <label for="customer">Заказчик:</label>
+            <input class="form-control bg-dark text-light" id="customer" type="text" name="customer">
+
+            <input type="submit" class="btn btn-primary" value="Добавить задачу">
+        </form>
+
+        <h2>Текущие задачи</h2>
+        <ul id="task-list">
+            {% for task in tasks %}
+                <li>{{ task.content }} - {{ task.status }} - Создана: {{ task.created_at }} | {{ task.assignet}}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <button id="theme-toggle">Сменить тему</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const taskList = document.getElementById('task-list');
+
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+            });
+
+            function updateTaskList() {
+                fetch('/tasks')
+                    .then(response => response.json())
+                    .then(data => {
+                        taskList.innerHTML = ''; // Очистить текущий список задач
+                        data.tasks.forEach(task => {
+                            const utcDate = new Date(task.created_at); // Указываем, что время в UTC
+                            const localDate = utcDate.toLocaleString();
+                            const li = document.createElement('li');
+                            li.textContent = `${task.content} - ${task.status} - Создана: ${localDate}`;
+                            taskList.appendChild(li);
+                        });
+                    })
+                    .catch(error => console.error('Error updating task list:', error));
+            }
+            // Начальная загрузка списка задач
+            updateTaskList();
+
+            // Обновлять список задач каждые 30 секунд
+            setInterval(updateTaskList, 30000);
+
+            const userAvatar = document.getElementById('user-avatar');
+            const userMenu = document.getElementById('user-menu');
+            const logoutButton = document.getElementById('logout-button');
+
+            // Показать/скрыть меню при клике на аватарку
+            userAvatar.addEventListener('click', function() {
+                userMenu.classList.toggle('show');
+            });
+
+            // Скрыть меню при клике вне его области
+            document.addEventListener('click', function(event) {
+                if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                    userMenu.classList.remove('show');
+                }
+            });
+
+            // Обработчик для кнопки "Выйти"
+            logoutButton.addEventListener('click', function() {
+                if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                    window.location.href = '/logout';
+                }
+            });
+
+            const taskForm = document.querySelector('form');
+            taskForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Предотвратить отправку формы
+
+                const formData = new FormData(taskForm);
+                fetch('/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message); // Показать сообщение об успешном добавлении задачи
+                    updateTaskList(); // Обновить список задач
+                    taskForm.reset(); // Сбросить значения формы
+                })
+                .catch(error => console.error('Error adding task:', error));
+            });
+        });
+    </script>
+</body>
+</html>
