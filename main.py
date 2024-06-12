@@ -598,6 +598,15 @@ def task_board():
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
 
+@app.route('/restart_calls')
+def restart_calls():
+    # Выполняем команду supervisorctl restart calls с помощью subprocess
+    try:
+        subprocess.run(['supervisorctl', 'restart', 'calls'], check=True)
+        return 'Команда supervisorctl restart calls выполнена успешно'
+    except subprocess.CalledProcessError:
+        return 'Ошибка выполнения команды supervisorctl restart calls'
+
 @app.route('/task_nlu')
 @login_required
 @role_required('admin')
