@@ -711,8 +711,8 @@ def api_tasks():
         )
         db.session.add(task)
         db.session.commit()
+        send_telegram_message(f"Задача добавлена в Календарь: {task.task_id} | {task.content}")
         return jsonify({'success': 'Task added'}), 201
-
     tasks = Task.query.all()
     events = []
     for task in tasks:
