@@ -14,3 +14,6 @@ class ProductionConfig(Config):
 
 class NLUConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.getenv('NLU_DATABASE_URI') or 'mysql+pymysql://admin:hf3h8hews@localhost/nlu'
+
+class CalConfig(Config):
+    SQLALCHEMY_DATABASE_URI = os.getenv('CAL_DATABASE_URI') or 'mysql+pymysql://admin:hf3h8hews@localhost/cal'

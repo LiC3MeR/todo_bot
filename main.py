@@ -6,7 +6,7 @@ from telebot import TeleBot
 import os
 import subprocess
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user, UserMixin
-from config import DevelopmentConfig, ProductionConfig, NLUConfig
+from config import DevelopmentConfig, ProductionConfig, NLUConfig, CalConfig
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, Task
 from flask_bcrypt import generate_password_hash, check_password_hash
@@ -28,6 +28,8 @@ if len(sys.argv) > 1:
         app.config.from_object(ProductionConfig)
     elif sys.argv[1] == 'nlu':
         app.config.from_object(NLUConfig)
+    elif sys.argv[1] == 'cal':
+        app.config.from_object(CalConfig)
     else:
         app.config.from_object(DevelopmentConfig)
 else:
@@ -119,12 +121,12 @@ class Task(db.Model):
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
     duration = db.Column(db.Integer)
-    comments = db.relationship('Comment', backref='task_related', lazy=True)
-
     def start_task(self):
         self.start_time = datetime.now()
         self.status = 2  # Предположим, что статус 2 - "В работе"
         db.session.commit()
+
+    comments = db.relationship('Comment', backref='task_related', lazy=True)
 
     def end_task(self):
         self.end_time = datetime.now()
@@ -361,7 +363,7 @@ def logout():
 @app.route('/phpmyadmin')
 def phpmyadmin():
     return redirect('/phpmyadmin')
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/test', methods=['GET', 'POST'])
 @login_required
 def index():
     if request.method == 'POST':
@@ -685,7 +687,52 @@ def create_task():
         print("Error creating task:", error)
         return jsonify({"error": str(error)}), 500
 
+@app.route('/')
+def calendar():
+    return render_template('calendar.html')
 
+@app.route('/api/tasks', methods=['GET', 'POST'])
+def api_tasks():
+    if request.method == 'POST':
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid data'}), 400
+        department = request.json.get('department')
+        unique_id = generate_unique_id(department)
+
+        task = Task(
+            task_id=unique_id,
+            content=data.get('title'),
+            description=data.get('description'),
+            start_time=datetime.fromisoformat(data.get('start')),
+            end_time=datetime.fromisoformat(data.get('end')),
+            priority=1,  # Установить значение приоритета по умолчанию
+            status=1  # Установить значение статуса по умолчанию
+        )
+        db.session.add(task)
+        db.session.commit()
+        return jsonify({'success': 'Task added'}), 201
+
+    tasks = Task.query.all()
+    events = []
+    for task in tasks:
+        event = {
+            'unique_id': task.task_id,
+            'title': task.content,
+            'start': task.start_time.isoformat() if task.start_time else None,
+            'end': task.end_time.isoformat() if task.end_time else None,
+            'description': task.description
+        }
+        events.append(event)
+    return jsonify(events)
+
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task_api(task_id):
+    task = Task.query.get_or_404(task_id)  # Получаем задачу по её ID или возвращаем 404 ошибку, если не найдена
+    db.session.delete(task)  # Удаляем задачу из сессии SQLAlchemy
+    db.session.commit()  # Применяем изменения в базе данных
+
+    return jsonify({"message": "Task deleted successfully"})
 @app.route('/users')
 @login_required
 def users():

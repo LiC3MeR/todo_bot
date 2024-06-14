@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Calendar</title>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylecalendar.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-…" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js'></script>
+</head>
+<body>
+    <div class="container">
+        <div id='calendar'></div>
+    </div>
+
+    <!-- Modal for adding task -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Добавить задачу</h2>
+            <input type="text" id="taskTitle" placeholder="Название задачи">
+            <textarea id="taskDescription" placeholder="Описание задачи"></textarea>
+            <button id="saveTask">Сохранить</button>
+        </div>
+    </div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridDay',
+        locale: 'ru',
+        themeSystem: 'bootstrap',
+        slotLabelFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: false
+        },
+        selectable: true,
+        editable: true,
+        businessHours: {
+            startTime: '09:30', // начало рабочего дня
+            endTime: '18:30', // конец рабочего дня
+            daysOfWeek: [1, 2, 3, 4, 5] // понедельник-пятница (можно настроить по своему усмотрению)
+        },
+        events: '/api/tasks',
+        select: function(info) {
+            if (!isTimeSlotAllowed(info.start, info.end)) {
+                // Если выбранный интервал времени не разрешен, отменяем выбор
+                calendar.unselect();
+                alert('Нельзя добавить задачу в нерабочее время или во время обеда.');
+            } else {
+                openModal(info);
+            }
+        },
+        // Добавляем nonBusinessSegemnts для периода обеда
+        nonBusinessSegemnts: [{
+            daysOfWeek: [1, 2, 3, 4, 5], // понедельник-пятница
+            startTime: '18:00', // начало обеда
+            endTime: '18:00' // конец обеда
+        }],
+        // Изменяем панель инструментов для использования кнопки "today" вместо "prev,next"
+        headerToolbar: {
+            left: 'today',
+            center: 'title',
+            right: 'next,prev' // Добавляем кнопку "today"
+        },
+        nowIndicator: true,
+    });
+
+    function isTimeSlotAllowed(startTime, endTime) {
+        // Проверяем, что startTime и endTime попадают в рабочее время и не в период обеда
+        var startHour = startTime.getHours();
+        var endHour = endTime.getHours();
+        var startMinute = startTime.getMinutes();
+        var endMinute = endTime.getMinutes();
+
+        if (startHour < 10 || endHour >= 19) {
+            return false; // Время выбрано в нерабочее время
+        }
+
+        return true;
+    }
+
+    calendar.render();
+
+    // Modal window
+    var modal = document.getElementById('taskModal');
+    var span = document.getElementsByClassName("close")[0];
+
+    function openModal(info) {
+        modal.style.display = "block";
+
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        var saveButton = document.getElementById('saveTask');
+        saveButton.onclick = function() {
+            var title = document.getElementById('taskTitle').value.trim();
+            var description = document.getElementById('taskDescription').value.trim();
+            if (title) {
+                var eventData = {
+                    title: title,
+                    start: info.startStr,
+                    end: info.endStr,
+                    description: description
+                };
+
+                fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(eventData)
+                }).then(response => {
+                    if (response.ok) {
+                        calendar.addEvent(eventData);
+                        modal.style.display = "none";
+                        alert('Задача добавлена');
+                    } else {
+                        alert('Ошибка при добавлении задачи');
+                    }
+                });
+            } else {
+                alert('Введите название задачи');
+            }
+        };
+    }
+});
+    </script>
+</body>
+</html>
+

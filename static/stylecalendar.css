@@ -1,0 +1,111 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a1a; /* Dark background color for the body */
+    color: #e0e0e0; /* Light text color */
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto; /* Center the container horizontally */
+    padding: 20px;
+    background-color: #333; /* Dark background for the container */
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* Box shadow for a subtle effect */
+}
+
+#calendar {
+    background-color: #2b2b2b; /* Slightly darker background for the calendar */
+    color: #e0e0e0; /* Light text color */
+}
+
+.modal {
+    display: none; /* Initially hidden */
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4); /* Semi-transparent dark overlay */
+}
+
+.modal-content {
+    background-color: #333; /* Dark background for the modal content */
+    margin: 15% auto; /* Center the modal vertically */
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%; /* Width of the modal content */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); /* Box shadow for a subtle effect */
+}
+
+.close {
+    color: #aaaaaa; /* Light gray color for the close button */
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: #ccc; /* Lighter gray on hover or focus */
+    text-decoration: none;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    font-size: 24px; /* Larger font size for modal heading */
+}
+
+input[type=text], textarea {
+    width: calc(100% - 24px); /* Full width input fields minus padding */
+    padding: 12px; /* Padding inside input fields */
+    margin: 6px 0; /* Margin around input fields */
+    display: inline-block;
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 4px; /* Rounded corners for input fields */
+    box-sizing: border-box;
+    background-color: #444; /* Dark background for input fields */
+    color: #e0e0e0; /* Light text color */
+}
+
+input[type=text]:focus, textarea:focus {
+    outline: none;
+    border-color: #66afe9; /* Light blue border color on focus */
+    box-shadow: 0 0 10px #66afe9; /* Light blue shadow on focus */
+}
+
+button {
+    background-color: #4CAF50; /* Green background color for buttons */
+    color: white; /* White text color */
+    padding: 12px 20px; /* Padding inside buttons */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners for buttons */
+    cursor: pointer; /* Pointer cursor on hover */
+    float: right; /* Align buttons to the right */
+}
+
+button:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+
+button:focus {
+    outline: none; /* No outline on focus */
+}
+
+.fc-now-indicator {
+    background-color: #ff2e44; /* Цвет полосы текущего времени */
+    opacity: 0.6; /* Прозрачность полосы текущего времени */
+    z-index: 1; /* Поверх других элементов */
+}
+
+.fc-dayGridDay-button, .fc-timeGridDay-button, .fc-daygrid-day-events {
+    display: none !important; /* Скрыть кнопку "Весь день" для видов 'dayGridDay' и 'timeGridDay' */
+}
+
+.fc-scrollgrid-sync-table {
+    display: none !important; /* Скрыть кнопку "Весь день" для видов 'dayGridDay' и 'timeGridDay' */
+}
