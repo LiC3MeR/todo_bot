@@ -1,9 +1,16 @@
-from todoist_api_python.api import TodoistAPI
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, redirect, abort
+import os
+import subprocess
+app = Flask(__name__)
 
-api = TodoistAPI("376f6ca4763413e176fd2a0eadd30af37f44cbea")
+@app.route('/')
+def restart_calls():
+    # Выполняем команду supervisorctl restart calls с помощью subprocess
+    try:
+        subprocess.run(['supervisorctl', 'restart', 'calls'], check=True)
+        return 'Команда supervisorctl restart calls выполнена успешно'
+    except subprocess.CalledProcessError:
+        return 'Ошибка выполнения команды supervisorctl restart calls'
 
-try:
-    tasks = api.get_tasks(project_id=2322606786)
-    print(tasks)
-except Exception as error:
-    print(error)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=1234)
