@@ -8,19 +8,29 @@ import subprocess
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user, UserMixin
 from config import DevelopmentConfig, ProductionConfig, NLUConfig, CalConfig
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from models import User, Task
 from flask_bcrypt import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import sys
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy import Column, Integer, DateTime, LargeBinary
 from functools import wraps
 from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity
 from jinja2 import TemplateNotFound
 from models import User, Task
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.date import DateTrigger
+import logging
 
 app = Flask(__name__, static_url_path='/static')
+app.config['UPLOAD_FOLDER'] = './static'
+
+handler = logging.StreamHandler()
+handler.setLevel(logging.ERROR)
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.ERROR)
 
 # Определяем конфигурацию на основе переданных аргументов или переменных окружения
 if len(sys.argv) > 1:
@@ -94,6 +104,12 @@ def hash_password(password):
     hashed_password = generate_password_hash(password, rounds=8).decode('utf-8')
     return hashed_password
 
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+def send_telegram_message(message):
+    bot.send_message(TELEGRAM_CHAT_ID, message)
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(500), nullable=False)
@@ -105,7 +121,6 @@ class Comment(db.Model):
 
     def __repr__(self):
         return f'<Comment {self.id} by User {self.user_id}>'
-
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -121,16 +136,23 @@ class Task(db.Model):
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
     duration = db.Column(db.Integer)
+
+    comments = db.relationship('Comment', backref='task_related', lazy=True)
+
     def start_task(self):
         self.start_time = datetime.now()
         self.status = 2  # Предположим, что статус 2 - "В работе"
         db.session.commit()
 
-    comments = db.relationship('Comment', backref='task_related', lazy=True)
+    def time_to_start(self):
+        if self.start_time:
+            current_time = datetime.now()
+            time_to_start = self.start_time - current_time
+            return time_to_start.total_seconds() > 0
+        return False
 
     def end_task(self):
         self.end_time = datetime.now()
-        self.duration = self.end_time - self.start_time
         self.status = 3  # Предположим, что статус 3 - "Готово"
         if self.start_time:
             duration_seconds = (self.end_time - self.start_time).total_seconds()
@@ -169,11 +191,39 @@ class Task(db.Model):
     def load_user(cls, user_id):
         return db.session.query(User).get(int(user_id))
 
+    @staticmethod
+    def send_notification(task_id):
+        with app.app_context():
+            task = Task.query.get(task_id)
+            if task:
+                try:
+                    message = f"Напоминание: Задача {task.task_id} начинается сейчас!"
+                    send_telegram_message(message)
+                    app.logger.info(f"Уведомление отправлено для задачи {task_id} в {datetime.now()}")
+                except Exception as e:
+                    app.logger.error(f"Ошибка отправки уведомления для задачи {task_id}: {e}")
+
+    @staticmethod
+    def notify_upcoming_tasks():
+        with app.app_context():
+            try:
+                tasks = Task.query.filter(Task.start_time != None).all()
+                for task in tasks:
+                    if task.time_to_start():
+                        notification_time = task.start_time - timedelta(minutes=15)
+                        scheduler.add_job(Task.send_notification, trigger='date', run_date=notification_time, args=[task.id])
+            except Exception as e:
+                app.logger.error(f"Error scheduling notifications: {e}")
+
+# Здесь добавляем задание для уведомлений
+scheduler.add_job(Task.notify_upcoming_tasks, 'interval', minutes=1)
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(80), nullable=False)
+    avatar_data = db.Column(db.LargeBinary)
+    image_file = db.Column(db.String(20), nullable=False, default='logo.jpg')
 
     comments = db.relationship('Comment', back_populates='user', lazy=True)
 
@@ -194,11 +244,6 @@ class User(db.Model, UserMixin):
 def init_db():
     with app.app_context():
         db.create_all()
-
-
-# Функция для отправки уведомления в телеграм
-def send_telegram_message(message):
-    bot.send_message(TELEGRAM_CHAT_ID, message)
 
 # Функция для генерации уникального идентификатора задачи
 def generate_unique_id(department):
@@ -293,11 +338,13 @@ def update_task(task_id):
 @app.route('/menu')
 @login_required
 def menu():
-    return render_template('menu.html', user=current_user)
+    image_filename = current_user.image_file.decode('utf-8')
+    return render_template('menu.html', user=current_user,  image_filename=image_filename)
 
 @app.route('/register')
 def reg():
-    return render_template('reg.html', user=current_user)
+    image_filename = current_user.image_file.decode('utf-8')
+    return render_template('reg.html', user=current_user,  image_filename=image_filename)
 
 @app.route('/create_user', methods=['POST'])
 @login_required
@@ -403,7 +450,8 @@ def index():
         try:
             # Обработка GET запроса (получение данных)
             tasks = Task.query.all()
-            return render_template('index.html', tasks=tasks, user=current_user)
+            image_filename = current_user.image_file.decode('utf-8')
+            return render_template('index.html', tasks=tasks, user=current_user, image_filename=image_filename)
         except Exception as error:
             print("Error fetching tasks:", error)
             return jsonify({"error": str(error)})
@@ -474,7 +522,8 @@ def admin():
             status = section_status_mapping.get(task.status, 'В очереди')
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
-                return render_template('indexfront.html', user=current_user,  tasks_by_section=tasks_by_section)
+                image_filename = current_user.image_file.decode('utf-8')
+                return render_template('indexfront.html', user=current_user,  tasks_by_section=tasks_by_section, image_filename=image_filename)
 
     except Exception as error:
         print("Error fetching tasks:", error)
@@ -594,7 +643,8 @@ def task_board():
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
-        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user)
+        image_filename = current_user.image_file.decode('utf-8')
+        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename)
 
     except Exception as error:
         print("Error fetching tasks:", error)
@@ -630,7 +680,8 @@ def task_board_nlu():
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
-        return render_template('task_boardnlu.html', tasks_by_section=tasks_by_section, user=current_user)
+        image_filename = current_user.image_file.decode('utf-8')
+        return render_template('task_boardnlu.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename)
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
@@ -741,7 +792,8 @@ def users():
 
     try:
         users = User.query.all()
-        return render_template('register.html', users=users, user=current_user)
+        image_filename = current_user.image_file.decode('utf-8')
+        return render_template('register.html', users=users, user=current_user, image_filename=image_filename)
     except Exception as error:
         print("Error fetching users:", error)
         return jsonify({"error": str(error)}), 500
@@ -842,11 +894,71 @@ def get_users():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/profile', methods=['GET'])
+def profile():
+    image_filename = current_user.image_file.decode('utf-8')
+    return render_template('profile.html', user=current_user, image_filename=image_filename)
+
+
+@app.route('/update_avatar', methods=['POST'])
+@login_required
+def update_avatar():
+    if 'new-avatar' in request.files:
+        new_avatar = request.files['new-avatar']
+        if new_avatar.filename != '':
+            filename = secure_filename(new_avatar.filename)
+            new_avatar.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            current_user.image_file = filename
+            try:
+                db.session.commit()
+                flash('Аватар обновлен успешно!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Ошибка при сохранении аватара: {str(e)}', 'error')
+        else:
+            flash('Не выбран файл для загрузки.', 'error')
+    else:
+        flash('Файл не был передан.', 'error')
+
+    return redirect(url_for('profile'))
+
+# Маршрут для обновления имени пользователя
+@app.route('/update_name', methods=['POST'])
+@login_required
+def update_name():
+    new_name = request.form.get('new-name')
+    current_user.username = new_name
+    db.session.commit()
+    flash('Имя пользователя обновлено успешно!', 'success')
+    return redirect(url_for('profile'))
+
+# Маршрут для обновления пароля пользователя
+@app.route('/update_password', methods=['POST'])
+@login_required
+def update_password():
+    current_password = request.form.get('current-password')
+    new_password = request.form.get('new-password')
+    confirm_password = request.form.get('confirm-password')
+
+    if new_password != confirm_password:
+        flash('Новый пароль и подтверждение пароля не совпадают.', 'error')
+        return redirect(url_for('profile'))
+
+    if not check_password_hash(current_user.password, current_password):
+        flash('Текущий пароль введен неверно.', 'error')
+        return redirect(url_for('profile'))
+
+    current_user.password = generate_password_hash(new_password)
+    db.session.commit()
+    flash('Пароль успешно обновлен!', 'success')
+    return redirect(url_for('profile'))
+
 @app.route('/show_delete_task')
 @login_required
 def show_delete_task():
     tasks = Task.query.all()
-    return render_template('delete_task.html', tasks=tasks, user=current_user)
+    image_filename = current_user.image_file.decode('utf-8')
+    return render_template('delete_task.html', tasks=tasks, user=current_user, image_filename=image_filename)
 
 def template_exists(template_name):
     try:

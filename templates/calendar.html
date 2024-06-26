@@ -9,6 +9,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-…" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js'></script>
+    <link rel="icon" type="image/png" sizes="16x16" href="https://upload.wikimedia.org/wikipedia/commons/2/22/Heckert_GNU_white.svg">
+    <style>
+        .highlight-now {
+            background-color: green !important;
+            color: white !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -20,8 +27,8 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Добавить задачу</h2>
-            <input type="text" id="taskTitle" placeholder="Название задачи">
-            <textarea id="taskDescription" placeholder="Описание задачи"></textarea>
+            <input type="text" id="taskTitle" placeholder="Что нужно?">
+            <textarea id="taskDescription" placeholder="Как связаться? (Телеграм)"></textarea>
             <button id="saveTask">Сохранить</button>
         </div>
     </div>
@@ -33,52 +40,65 @@ document.addEventListener('DOMContentLoaded', function() {
         initialView: 'timeGridDay',
         locale: 'ru',
         themeSystem: 'bootstrap',
-        slotLabelFormat: {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: false
+        slotLabelContent: function(slotInfo) {
+            var date = slotInfo.date;
+            var hour = date.getHours();
+            var minute = date.getMinutes();
+
+            // Adjust the display of minutes to show '30' instead of '00'
+            if (minute === 0) {
+                minute = '30';
+            } else {
+                minute = '00'; // Reset to '00' for other minutes
+            }
+
+            // Format the time label
+            return hour + ':' + minute;
         },
         selectable: true,
         editable: true,
         businessHours: {
             startTime: '09:30', // начало рабочего дня
             endTime: '18:30', // конец рабочего дня
-            daysOfWeek: [1, 2, 3, 4, 5] // понедельник-пятница (можно настроить по своему усмотрению)
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6] // понедельник-пятница
         },
         events: '/api/tasks',
         select: function(info) {
             if (!isTimeSlotAllowed(info.start, info.end)) {
-                // Если выбранный интервал времени не разрешен, отменяем выбор
                 calendar.unselect();
                 alert('Нельзя добавить задачу в нерабочее время или во время обеда.');
             } else {
                 openModal(info);
             }
         },
-        // Добавляем nonBusinessSegemnts для периода обеда
         nonBusinessSegemnts: [{
-            daysOfWeek: [1, 2, 3, 4, 5], // понедельник-пятница
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // понедельник-пятница
             startTime: '18:00', // начало обеда
             endTime: '18:00' // конец обеда
         }],
-        // Изменяем панель инструментов для использования кнопки "today" вместо "prev,next"
         headerToolbar: {
             left: 'today',
             center: 'title',
-            right: 'next,prev' // Добавляем кнопку "today"
+            right: 'next,prev'
         },
         nowIndicator: true,
+        eventDidMount: function(info) {
+            // Highlight current events
+            var now = new Date();
+            if (info.event.start <= now && now < info.event.end) {
+                info.el.classList.add('highlight-now');
+            }
+        }
     });
 
     function isTimeSlotAllowed(startTime, endTime) {
-        // Проверяем, что startTime и endTime попадают в рабочее время и не в период обеда
         var startHour = startTime.getHours();
         var endHour = endTime.getHours();
         var startMinute = startTime.getMinutes();
         var endMinute = endTime.getMinutes();
 
-        if (startHour < 10 || endHour >= 19) {
-            return false; // Время выбрано в нерабочее время
+        if (startHour < 9 || endHour > 18 || (endHour === 18 && endMinute > 30)) {
+            return false;
         }
 
         return true;
@@ -86,7 +106,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     calendar.render();
 
-    // Modal window
     var modal = document.getElementById('taskModal');
     var span = document.getElementsByClassName("close")[0];
 
@@ -95,13 +114,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         span.onclick = function() {
             modal.style.display = "none";
-        }
+        };
 
         window.onclick = function(event) {
             if (event.target == modal) {
                 modal.style.display = "none";
             }
-        }
+        };
 
         var saveButton = document.getElementById('saveTask');
         saveButton.onclick = function() {
@@ -139,4 +158,3 @@ document.addEventListener('DOMContentLoaded', function() {
     </script>
 </body>
 </html>
-

@@ -16,8 +16,9 @@
         </div>
         <div id="user-info">
             <span id="username">{{ user.display_name() }}</span>
-            <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
+            <img id="user-avatar" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя">
             <div id="user-menu" class="user-menu">
+                <button id="profile-button">Профиль</button>
                 <button id="logout-button">Выйти</button>
             </div>
         </div>
@@ -137,6 +138,8 @@
             const userAvatar = document.getElementById('user-avatar');
             const userMenu = document.getElementById('user-menu');
             const logoutButton = document.getElementById('logout-button');
+            const profileButton = document.getElementById('profile-button');
+
 
             // Показать/скрыть меню при клике на аватарку
             userAvatar.addEventListener('click', function() {
@@ -155,6 +158,11 @@
                 if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
                     window.location.href = '/logout';
                 }
+            });
+
+            // Обработчик для кнопки "Профиль"
+            profileButton.addEventListener('click', function() {
+                window.location.href = '{{ url_for("profile") }}';
             });
 
             const taskForm = document.querySelector('form');

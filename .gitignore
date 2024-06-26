@@ -2,3 +2,10 @@ instance/base.db
 .venv
 __pycache__
 *.pyc
+static/*.jpg
+static/*.jpeg
+static/*.png
+static/*.gif
+static/*.mp4
+static/*.avi
+static/*.mov

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+    <title>Profile</title>
+</head>
+<body class="dark-mode">
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username">{{ current_user.display_name() }}</span>
+            <img id="user-avatar" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="profile-button">Профиль</button>
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                    {% if template_exists('indexfront.html') %}
+                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% endif %}
+                    {% if template_exists('register.html') %}
+                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                    {% endif %}
+                    {% if template_exists('task_board.html') %}
+                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                    {% endif %}
+                    {% if template_exists('delete_task.html') %}
+                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% endif %}
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1 class="text-center my-4">Профиль</h1>
+        <main class="content">
+            <h1>Профиль пользователя</h1>
+
+            <section>
+                <h2>Смена аватара</h2>
+                <form id="avatar-form" class="update-form" method="POST" enctype="multipart/form-data" action="{{ url_for('update_avatar') }}">
+                    <label for="new-avatar">Загрузить новый аватар:</label>
+                    <input type="file" id="new-avatar" name="new-avatar" class="form-control">
+                    <input type="submit" value="Сохранить" class="form-control">
+                </form>
+            </section>
+
+            <section>
+                <h2>Смена имени</h2>
+                <form id="name-form" class="update-form" method="POST" action="{{ url_for('update_name') }}">
+                    <label for="new-name">Новое имя:</label>
+                    <input type="text" id="new-name" name="new-name" class="form-control">
+                    <input type="submit" value="Сохранить" class="form-control">
+                </form>
+            </section>
+
+            <section>
+                <h2>Смена пароля</h2>
+                <form id="password-form" class="update-form" method="POST" action="{{ url_for('update_password') }}">
+                    <label for="current-password">Текущий пароль:</label>
+                    <input type="password" id="current-password" name="current-password" class="form-control">
+                    <label for="new-password">Новый пароль:</label>
+                    <input type="password" id="new-password" name="new-password" class="form-control">
+                    <label for="confirm-password">Подтвердите новый пароль:</label>
+                    <input type="password" id="confirm-password" name="confirm-password" class="form-control">
+                    <input type="submit" value="Сохранить" class="form-control">
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+
+        const userAvatar = document.getElementById('user-avatar');
+        const userMenu = document.getElementById('user-menu');
+        const logoutButton = document.getElementById('logout-button');
+        const profileButton = document.getElementById('profile-button');
+
+        // Показать/скрыть меню при клике на аватарку
+        userAvatar.addEventListener('click', function() {
+            userMenu.classList.toggle('show');
+        });
+
+        // Скрыть меню при клике вне его области
+        document.addEventListener('click', function(event) {
+            if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                userMenu.classList.remove('show');
+            }
+        });
+
+        // Обработчик для кнопки "Выйти"
+        logoutButton.addEventListener('click', function() {
+            if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                window.location.href = '/logout';
+            }
+        });
+
+        // Обработчик для кнопки "Профиль"
+        profileButton.addEventListener('click', function() {
+            window.location.href = '{{ url_for("profile") }}';
+        });
+    </script>
+</body>
+</html>

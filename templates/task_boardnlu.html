@@ -116,8 +116,9 @@
         </div>
         <div id="user-info">
             <span id="username"> ROOT | {{ current_user.username }}</span>
-            <img id="user-avatar" src="/static/logo.jpg" alt="Аватар пользователя">
+            <img id="user-avatar" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя">
             <div id="user-menu" class="user-menu">
+                <button id="profile-button">Профиль</button>
                 <button id="logout-button">Выйти</button>
             </div>
         </div>
