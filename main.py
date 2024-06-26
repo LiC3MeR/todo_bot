@@ -101,7 +101,7 @@ def role_required(role):
 
 def hash_password(password):
     # Генерируем хэш пароля
-    hashed_password = generate_password_hash(password, rounds=8).decode('utf-8')
+    hashed_password = generate_password_hash(password)
     return hashed_password
 
 scheduler = BackgroundScheduler()
@@ -217,11 +217,18 @@ class Task(db.Model):
 
 # Здесь добавляем задание для уведомлений
 scheduler.add_job(Task.notify_upcoming_tasks, 'interval', minutes=1)
+
+def __init__(self, username, password, role='user'):
+    self.username = username
+    self.password = hash_password(password)
+    self.role = role
+
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(80), nullable=False)
+    role = db.Column(db.String(80))
     avatar_data = db.Column(db.LargeBinary)
     image_file = db.Column(db.String(20), nullable=False, default='logo.jpg')
 
@@ -235,11 +242,6 @@ class User(db.Model, UserMixin):
             return f'ROOT | {self.username}'
         else:
             return self.username
-
-    def __init__(self, username, password):
-        self.username = username
-        self.password = hash_password(password)
-
 
 def init_db():
     with app.app_context():
@@ -347,8 +349,6 @@ def reg():
     return render_template('reg.html', user=current_user,  image_filename=image_filename)
 
 @app.route('/create_user', methods=['POST'])
-@login_required
-@role_required('admin')
 def create_user():
     if request.method == 'POST':
         username = request.form['username']
@@ -370,7 +370,6 @@ def create_user():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Check user data (e.g., from the database)
         username = request.form['username']
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
@@ -378,7 +377,7 @@ def login():
             login_user(user)
             return redirect('/menu')
         else:
-            flash('Incorrect username or password', 'error')
+            flash('Неправильное имя пользователя или пароль', 'error')
     return render_template('login.html')
 
 @app.route('/admin_panel')
