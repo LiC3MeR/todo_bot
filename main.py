@@ -378,10 +378,16 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect('/task_board')
+            return redirect('/after_login')
         else:
             flash('Неправильное имя пользователя или пароль', 'error')
     return render_template('login.html')
+
+@app.route('/after_login', methods=['GET', 'POST'])
+def after_login():
+    user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
+    send_telegram_message(f" Пользователь {user_name} вошёл в свой аккаунт")
+    return redirect('/task_board')
 
 @app.route('/admin_panel')
 @login_required
