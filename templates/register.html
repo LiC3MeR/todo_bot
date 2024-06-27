@@ -52,7 +52,9 @@
     <div class="container">
         <h2>Список пользователей</h2>
         <form action="/create_user" method="POST">
-            <label for="username">Имя пользователя:</label><br>
+            <label for="usernick">Имя пользователя:</label><br>
+            <input type="text" id="usernick" name="usernick" required><br>
+            <label for="username">Логин:</label><br>
             <input type="text" id="username" name="username" required><br>
             <label for="password">Пароль:</label><br>
             <input type="password" id="password" name="password" required><br>
@@ -68,6 +70,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Имя пользователя</th>
+                    <th>Логин</th>
                     <th>Роль</th>
                     <th>Действия</th>
                 </tr>
@@ -76,6 +79,7 @@
                 {% for user in users %}
                 <tr class="userRow" data-user-id="{{ user.id }}" data-username="{{ user.username }}" data-user-role="{{ user.role }}">
                     <td>{{ user.id }}</td>
+                    <td>{{ user.usernick }}</td>
                     <td>{{ user.username }}</td>
                     <td>{{ user.role }}</td>
                     <td>

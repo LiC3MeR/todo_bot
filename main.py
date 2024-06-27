@@ -218,7 +218,8 @@ class Task(db.Model):
 # Здесь добавляем задание для уведомлений
 scheduler.add_job(Task.notify_upcoming_tasks, 'interval', minutes=1)
 
-def __init__(self, username, password, role='user'):
+def __init__(self, usernick, username, password, role='user'):
+    self.usernick = usernick
     self.username = username
     self.password = hash_password(password)
     self.role = role
@@ -226,6 +227,7 @@ def __init__(self, username, password, role='user'):
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
+    usernick = db.Column(db.String(50), unique=True, nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(80))
@@ -239,9 +241,9 @@ class User(db.Model, UserMixin):
 
     def display_name(self):
         if self.role == 'admin':
-            return f'ROOT | {self.username}'
+            return f'ROOT | {self.usernick}'
         else:
-            return self.username
+            return self.usernick
 
 def init_db():
     with app.app_context():
@@ -290,12 +292,12 @@ def comments(task_id):
 
                 # Возвращаем данные комментария в формате JSON
                 comment_data = {
-                    'username': comment.user.username,
+                    'username': comment.user.usernick,
                     'content': comment.content,
                     'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
                 }
                 # Отправляем уведомление в телеграм
-                send_telegram_message(f'Добавлен новый комментарий от пользователя {comment.user.username} к задаче {task.task_id}:\n {content}')
+                send_telegram_message(f'Добавлен новый комментарий от пользователя {comment.user.usernick} к задаче {task.task_id}:\n {content}')
 
                 return jsonify(comment_data), 201  # HTTP статус 201 Created для успешного создания ресурса
             except Exception as e:
@@ -304,7 +306,7 @@ def comments(task_id):
 
     if request.method == 'GET':
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            comments = [{'username': comment.user.username, 'content': comment.content, 'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+            comments = [{'username': comment.user.usernick, 'content': comment.content, 'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S')}
                         for comment in task.comments if comment.user]  # Проверяем, что comment.user не None
             return jsonify(comments)
 
@@ -351,6 +353,7 @@ def reg():
 @app.route('/create_user', methods=['POST'])
 def create_user():
     if request.method == 'POST':
+        usernick = request.form['usernick']
         username = request.form['username']
         password = request.form['password']
         role = request.form.get('role')
@@ -361,7 +364,7 @@ def create_user():
         if not (username and password and role):
             return jsonify({'error': 'Не все поля были заполнены'}), 400
         hashed_password = generate_password_hash(password)
-        new_user = User(username=username, password=hashed_password, role=role)
+        new_user = User(username=username, usernick=usernick, password=hashed_password, role=role)
         db.session.add(new_user)
         db.session.commit()
         flash('Пользователь успешно создан', 'success')
@@ -375,7 +378,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect('/menu')
+            return redirect('/task_board')
         else:
             flash('Неправильное имя пользователя или пароль', 'error')
     return render_template('login.html')
@@ -466,7 +469,7 @@ def start_task(task_id):
 
         task.start_task()
         unique_id = task.task_id
-        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
+        user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
         send_telegram_message(f" Пользователь {user_name} взял задачу {unique_id} в работу")
         return jsonify("OK"), 200
 
@@ -484,7 +487,7 @@ def end_task(task_id):
 
         task.end_task()
         unique_id = task.task_id
-        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
+        user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
         formatted_duration = format_duration(task.duration)
         send_telegram_message(f"Пользователь {user_name} завершил выполнение задачи {unique_id} за {formatted_duration}")
         return jsonify("OK"), 200
@@ -546,7 +549,7 @@ def get_tasks():
             created_at = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Не указана"
             assigned_user_name = None
             if task.user:
-                assigned_user_name = task.user.username
+                assigned_user_name = task.user.usernick
 
             task_list.append({
                 "content": task.content,
@@ -592,7 +595,7 @@ def update_task_status():
         old_status = id_to_status_mapping.get(old_status_id, 'Неизвестный статус')
         task.status = new_section_id
         db.session.commit()
-        user_name = current_user.username if current_user.is_authenticated else 'Неизвестный пользователь'
+        user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
         send_telegram_message(f"Пользователь {user_name} обновил статус задачи {task_id} изменен с '{old_status}' на '{new_status}'")
 
         return jsonify({"message": "Статус задачи изменён"})
@@ -729,8 +732,8 @@ def create_task():
         db.session.add(new_task)
         db.session.commit()
 
-        user_name = current_user.username
-        send_telegram_message(f"Пользователь {user_name} добавил задачу {task_content_with_id} | Исполнитель: {assigned_user.username}")
+        user_name = current_user.usernick
+        send_telegram_message(f"Пользователь {user_name} добавил задачу {task_content_with_id} | Исполнитель: {assigned_user.usernick}")
 
         return jsonify({"message": "Задача успешно добавлена", "task_id": unique_id, "content": task_content_with_id})
     except Exception as error:
@@ -894,6 +897,7 @@ def get_users():
         return jsonify({'error': str(e)})
 
 @app.route('/profile', methods=['GET'])
+@login_required
 def profile():
     image_filename = current_user.image_file.decode('utf-8')
     return render_template('profile.html', user=current_user, image_filename=image_filename)
@@ -926,7 +930,7 @@ def update_avatar():
 @login_required
 def update_name():
     new_name = request.form.get('new-name')
-    current_user.username = new_name
+    current_user.usernick = new_name
     db.session.commit()
     flash('Имя пользователя обновлено успешно!', 'success')
     return redirect(url_for('profile'))
