@@ -115,6 +115,15 @@ ul.menu li a:hover {
 
 .menu li {
     border-bottom: 1px solid #333; /* Граница между элементами меню */
+    padding: 10px;
+}
+
+.menu-section {
+    font-weight: bold;
+    margin-top: 20px;
+    text-align: center;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ccc;
 }
 
 .menu a {
@@ -128,6 +137,7 @@ ul.menu li a:hover {
 .menu a:hover, .menu a:focus {
     background-color: #505050; /* Цвет фона при наведении */
     color: #fff; /* Цвет текста при наведении */
+    text-decoration: underline;
 }
 
 .column {

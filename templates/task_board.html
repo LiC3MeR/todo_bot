@@ -30,22 +30,25 @@
             <li><a href="{{ url_for('index') }}">Home</a></li>
             {% if current_user.is_authenticated %}
                 {% if current_user.role == 'admin' %}
-                    {% if template_exists('indexfront.html') %}
-                        <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                    {% if template_exists('indexfront.html') or template_exists('register.html') %}
+                        <li class="menu-section">Администрирование</li>
+                        {% if template_exists('indexfront.html') %}
+                            <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+                        {% endif %}
+                        {% if template_exists('register.html') %}
+                            <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                        {% endif %}
                     {% endif %}
-                    {% if template_exists('register.html') %}
-                        <li><a href="{{ url_for('users') }}">Пользователи</a></li>
-                    {% endif %}
-                    {% if template_exists('task_board.html') %}
-                        <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
-                    {% endif %}
-                    {% if template_exists('delete_task.html') %}
-                        <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                    {% if template_exists('task_board.html') or template_exists('delete_task.html') %}
+                        <li class="menu-section">Задачи</li>
+                        {% if template_exists('task_board.html') %}
+                            <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+                        {% endif %}
+                        {% if template_exists('delete_task.html') %}
+                            <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
-                <li><a href="{{ url_for('logout') }}">Выйти</a></li>
-            {% else %}
-                <li><a href="{{ url_for('login') }}">Login</a></li>
             {% endif %}
         </ul>
     </nav>
