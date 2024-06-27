@@ -108,7 +108,7 @@
             <div class="column" id="queue">
                 <h3 class="text-center text-light">В очереди</h3>
                 {% for task in tasks_by_section['В очереди'] %}
-                <div class="task" data-id="{{ task.task_id }}">
+                <div class="task" data-id="{{ task.id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
@@ -117,7 +117,7 @@
                     {% endif %}
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
-                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.id }}">Редактировать</button>
                     <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
 
                     <!-- Модальное окно для списка комментариев -->
@@ -176,7 +176,7 @@
             <div class="column" id="in-progress">
                 <h2 class="text-center text-light">В работе</h2>
                 {% for task in tasks_by_section['В работе'] %}
-                    <div class="task" data-id="{{ task.task_id }}">
+                    <div class="task" data-id="{{ task.id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
@@ -185,7 +185,7 @@
                     {% endif %}
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
-                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.id }}">Редактировать</button>
                     <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
 
                     <!-- Модальное окно для списка комментариев -->
@@ -243,7 +243,7 @@
             <div class="column" id="done">
                 <h2 class="text-center text-light">Готово</h2>
                 {% for task in tasks_by_section['Готово'] %}
-                    <div class="task" data-id="{{ task.task_id }}">
+                    <div class="task" data-id="{{ task.id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
                     <p>Исполнитель: {{ task.user.username }}</p>
@@ -252,7 +252,7 @@
                     {% endif %}
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
-                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.task_id }}">Редактировать</button>
+                    <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.id }}">Редактировать</button>
                     <button class="btn btn-sm btn-primary open-comments-btn" data-task-id="{{ task.id }}">Комментарии</button>
 
                     <!-- Модальное окно для списка комментариев -->

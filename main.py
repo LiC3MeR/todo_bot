@@ -312,12 +312,12 @@ def comments(task_id):
 
     return render_template('comments.html', task=task, comments=task.comments)
 
-@app.route('/update_task/<task_id>', methods=['POST'])
-def update_task(task_id):
+@app.route('/update_task/<id>', methods=['POST'])
+def update_task(id):
     try:
-        task = db.session.get(Task, task_id)
+        task = db.session.get(Task, id)
         if not task:
-            return jsonify({"error": f"Задача с ID {task_id} не найдена"}), 404
+            return jsonify({"error": f"Задача с ID {id} не найдена"}), 404
 
         # Получаем данные из запроса
         content = request.json.get('content')
@@ -652,7 +652,7 @@ def task_board():
                 tasks_by_section[status].append(task)
 
         image_filename = current_user.image_file.decode('utf-8')
-        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename)
+        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename, task_id=Task.id)
 
     except Exception as error:
         print("Error fetching tasks:", error)
