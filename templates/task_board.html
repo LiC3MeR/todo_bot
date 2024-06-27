@@ -111,7 +111,7 @@
                 <div class="task" data-id="{{ task.id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
-                    <p>Исполнитель: {{ task.user.username }}</p>
+                    <p>Исполнитель: {{ task.user.usernick }}</p>
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
@@ -179,7 +179,7 @@
                     <div class="task" data-id="{{ task.id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
-                    <p>Исполнитель: {{ task.user.username }}</p>
+                    <p>Исполнитель: {{ task.user.usernick }}</p>
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
@@ -246,7 +246,7 @@
                     <div class="task" data-id="{{ task.id }}">
                     <h5>{{ task.content }}</h5>
                     <p>{{ task.description }}</p>
-                    <p>Исполнитель: {{ task.user.username }}</p>
+                    <p>Исполнитель: {{ task.user.usernick }}</p>
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
