@@ -8,6 +8,87 @@
         <title>Список пользователей</title>
 </head>
 <body>
+<style>
+.modal label {
+    margin-bottom: -15px;
+    margin-top: 20px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #1e1e1e;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    color: #e0e0e0;
+}
+
+.modal-content h3 {
+    color: #fff;
+}
+
+.modal-content p {
+    color: #bbb;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+label {
+    font-weight: bold;
+    color: #e0e0e0;
+}
+
+input[type="password"],
+input[type="text"],
+select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #2e2e2e;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #e0e0e0;
+}
+
+button, input[type="button"] {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover, input[type="button"]:hover {
+    background-color: #333;
+}
+</style>
     <header>
         <div class="logo">
             <img src="/static/logo.jpg" alt="Логотип">
@@ -108,11 +189,17 @@
             <button id="changeRoleBtn">Сохранить изменения роли</button>
             <div id="changePasswordForm" style="display: none;">
                 <label for="newPassword">Новый пароль:</label><br>
-                <input type="password" id="newPassword" name="newPassword" required><br>
+                <input type="text" id="newPassword" name="newPassword" required><br>
                 <input type="button" id="confirmPasswordBtn" value="Подтвердить изменения">
             </div>
             <button id="showChangePasswordFormBtn">Сменить пароль</button>
             <button id="generatePasswordBtn">Сгенерировать пароль</button>
+            <div id="changeUsernameForm" style="display: none;">
+                <label for="new_name">Новый никнейм:</label><br>
+                <input type="text" id="new_name" name="new_name" required><br>
+                <input type="button" id="confirmUsernameBtn" value="Подтвердить изменения">
+            </div>
+            <button id="showChangeUsernameFormBtn">Сменить никнейм</button>
         </div>
     </div>
     <script>
@@ -157,6 +244,7 @@
             .then(response => {
                 if (response.ok) {
                     alert("Пароль успешно изменен");
+                    location.reload();
                 } else {
                     response.json().then(data => {
                         alert("Ошибка: " + data.error);
@@ -169,6 +257,42 @@
             });
 
             document.getElementById("changePasswordForm").style.display = "none";
+        };
+
+        document.getElementById("showChangeUsernameFormBtn").onclick = function() {
+            document.getElementById("changeUsernameForm").style.display = "block";
+        };
+
+        document.getElementById("confirmUsernameBtn").onclick = function() {
+            var userId = modalUserId.textContent;
+            var new_name = document.getElementById("new_name").value;
+
+            fetch('/update_name_admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    new_name: new_name
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Никнейм успешно изменен");
+                    location.reload();
+                } else {
+                    response.json().then(data => {
+                        alert("Ошибка: " + data.error);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при выполнении запроса:', error);
+                alert("Произошла ошибка при выполнении запроса. Пожалуйста, попробуйте еще раз.");
+            });
+
+            document.getElementById("changeUsernameForm").style.display = "none";
         };
 
         document.getElementById("generatePasswordBtn").onclick = function() {

@@ -936,10 +936,23 @@ def update_avatar():
 @login_required
 def update_name():
     new_name = request.form.get('new-name')
-    current_user.usernick = new_name
+    users.usernick = new_name
     db.session.commit()
     flash('Имя пользователя обновлено успешно!', 'success')
     return redirect(url_for('profile'))
+
+@app.route('/update_name_admin', methods=['POST'])
+@login_required
+def update_name_admin():
+    data = request.get_json()
+    user_id = data['user_id']
+    new_name = data['new_name']
+    user = User.query.get(user_id)
+    if user:
+        user.usernick = new_name
+        db.session.commit()
+        return jsonify({'message': 'Никнейм изменён'}), 200
+    return jsonify({'error': 'Пользователь не найден'}), 404
 
 # Маршрут для обновления пароля пользователя
 @app.route('/update_password', methods=['POST'])
