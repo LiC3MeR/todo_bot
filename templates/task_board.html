@@ -56,9 +56,16 @@
         {% block content %}{% endblock %}
     </div>
 <body>
+<style>
+    .container h1 {
+        text-align: center;
+        margin-top: -15px;
+        margin-bottom: 50px;
+        color: #e0e0e0;
+    }
+</style>
     <div class="container">
-        <h1 class="text-center my-4">Доска задач</h1>
-
+        <h1>Доска задач</h1>
         <div class="task-form">
             <h4>Создать новую задачу</h4>
             <form id="taskForm">

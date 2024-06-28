@@ -126,6 +126,11 @@ ul.menu li a:hover {
     border-bottom: 1px solid #ccc;
 }
 
+.container h2 {
+    text-align: center;
+    margin-top: 0px;
+}
+
 .menu a {
     display: block; /* Сделать ссылку блочным элементом */
     padding: 10px 20px; /* Паддинг для удобства клика */

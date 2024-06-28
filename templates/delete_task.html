@@ -50,7 +50,15 @@
         {% block content %}{% endblock %}
     </div>
 <body>
-    <h1>Удалить задачи</h1>
+<style>
+    .deltask {
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+        margin-top: -20px;
+    }
+</style>
+    <h1 class="deltask">Удалить задачи</h1>
     <form id="deleteForm">
         {% for task in tasks %}
             <div>
