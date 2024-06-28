@@ -9,8 +9,9 @@
 </head>
 <body class="dark-mode">
 <style>
-    img {
-        width: 100%;
+    .avatar-us {
+        height: 300px;
+        width: 300px;
     }
 </style>
     <header>
@@ -62,7 +63,7 @@
                 <h2>Смена аватара</h2>
                 <form id="avatar-form" class="update-form" method="POST" enctype="multipart/form-data" action="{{ url_for('update_avatar') }}">
                     <label>Текущая аватарка:</label></br>
-                    <img id="avatar-us" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя"></br></br></br>
+                    <img class="avatar-us" id="avatar-us" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя"></br></br></br>
                     <label for="new-avatar">Загрузить новый аватар:</label>
                     <input type="file" id="new-avatar" name="new-avatar" class="form-control">
                     <input type="submit" value="Сохранить" class="form-control">
