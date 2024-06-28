@@ -936,7 +936,7 @@ def update_avatar():
 @login_required
 def update_name():
     new_name = request.form.get('new-name')
-    users.usernick = new_name
+    current_user.usernick = new_name
     db.session.commit()
     flash('Имя пользователя обновлено успешно!', 'success')
     return redirect(url_for('profile'))
