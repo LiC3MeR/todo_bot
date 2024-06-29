@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agile Board</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jkanban@1.2.0/dist/jkanban.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css">
+    <style>
+        #timeline {
+            height: 200px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="kanban"></div>
+
+    <div id="timeline"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jkanban@1.2.0/dist/jkanban.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                var kanban = new jKanban({
+                    element: '#kanban',
+                    boards: [
+                        {
+                            'id': '_todo',
+                            'title': 'To Do',
+                            'item': []
+                        },
+                        {
+                            'id': '_inprogress',
+                            'title': 'In Progress',
+                            'item': []
+                        },
+                        {
+                            'id': '_done',
+                            'title': 'Done',
+                            'item': []
+                        }
+                    ]
+                });
+
+                fetch('/api/v2/tasks')
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(task => {
+                            var boardId = '';
+                            if (task.status === 1) {
+                                boardId = '_todo';
+                            } else if (task.status === 2) {
+                                boardId = '_inprogress';
+                            } else if (task.status === 3) {
+                                boardId = '_done';
+                            }
+                            kanban.addElement(boardId, {
+                                'title': task.content,
+                                'id': task.id
+                            });
+                        });
+
+                        // Создание таймлайна
+                        var container = document.getElementById('timeline');
+                        var items = data.map(task => ({
+                            id: task.id,
+                            content: task.content,
+                            start: task.start_time, // Замените на дату начала задачи
+                            end: task.end_time    // Замените на дату окончания задачи
+                        }));
+
+                        var options = {};
+                        var timeline = new vis.Timeline(container, items, options);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching tasks:', error);
+                    });
+            } catch (error) {
+                console.error('Error initializing jKanban:', error);
+            }
+        });
+    </script>
+</body>
+</html>

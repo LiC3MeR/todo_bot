@@ -418,7 +418,7 @@ def logout():
 @app.route('/phpmyadmin')
 def phpmyadmin():
     return redirect('/phpmyadmin')
-@app.route('/test', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
     if request.method == 'POST':
@@ -746,9 +746,25 @@ def create_task():
         print("Error creating task:", error)
         return jsonify({"error": str(error)}), 500
 
-@app.route('/')
+@app.route('/test')
 def calendar():
     return render_template('calendar.html')
+
+@app.route('/kanban')
+def kanban():
+    return render_template('kanban.html')
+
+@app.route('/api/v2/tasks')
+def api_v2_tasks():
+    tasks = Task.query.all()
+    tasks_data = [{
+        'id': task.id,
+        'content': task.content,
+        'status': task.status,
+        'start_time': task.start_time.strftime('%Y-%m-%d') if task.start_time else None,
+        'end_time': task.end_time.strftime('%Y-%m-%d') if task.end_time else None
+    } for task in tasks]
+    return jsonify(tasks_data)
 
 @app.route('/api/tasks', methods=['GET', 'POST'])
 def api_tasks():
