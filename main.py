@@ -60,10 +60,10 @@ class TaskAdmin(ModelView):
     column_list = ('content', 'description', 'priority', 'project_id', 'status', 'assignee')
 
 # Инициализация Flask-Admin
-admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
+root = Admin(app, name='Admin Panel', template_mode='bootstrap3')
 
 # Регистрация моделей для админки
-admin.add_view(TaskAdmin(Task, db.session))
+root.add_view(TaskAdmin(Task, db.session))
 
 @identity_loaded.connect_via(app)
 def on_identity_loaded(sender, identity):
@@ -240,7 +240,7 @@ class User(db.Model, UserMixin):
         return True
 
     def display_name(self):
-        if self.role == 'admin':
+        if self.role == 'root':
             return f'ROOT | {self.usernick}'
         else:
             return self.usernick
@@ -391,7 +391,7 @@ def after_login():
 
 @app.route('/admin_panel')
 @login_required
-@role_required('admin')
+@role_required('root')
 def admin_panel():
     return 'Admin Panel'
 
@@ -510,7 +510,7 @@ def format_duration(seconds):
 
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@role_required('root')
 def admin():
     try:
         tasks = Task.query.all()
@@ -669,7 +669,7 @@ def restart_calls():
 
 @app.route('/task_nlu')
 @login_required
-@role_required('admin')
+@role_required('root')
 def task_board_nlu():
     try:
         tasks = Task.query.all()
@@ -811,7 +811,7 @@ def delete_task_api(task_id):
 @app.route('/users')
 @login_required
 def users():
-    if current_user.role != 'admin':
+    if current_user.role != 'root':
         abort(403)
 
     try:

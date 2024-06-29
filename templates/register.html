@@ -107,7 +107,7 @@ button:hover, input[type="button"]:hover {
         <ul>
             <li><a href="{{ url_for('index') }}">Home</a></li>
             {% if current_user.is_authenticated %}
-                {% if current_user.role == 'admin' %}
+                {% if current_user.role == 'root' %}
                     {% if template_exists('indexfront.html') or template_exists('register.html') %}
                         <li class="menu-section">Администрирование</li>
                         {% if template_exists('indexfront.html') %}
@@ -145,7 +145,7 @@ button:hover, input[type="button"]:hover {
             <label for="role">Роль:</label><br>
             <select id="role" name="role">
                 <option value="user">Пользователь</option>
-                <option value="admin">Администратор</option>
+                <option value="root">Администратор</option>
             </select><br>
             <input type="submit" value="Создать пользователя">
         </form>
