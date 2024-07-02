@@ -697,9 +697,6 @@ def task_board():
 @login_required
 @permission_required('user_access')
 def manage_roles():
-    if 'admin_access' not in [perm.name for perm in current_user.role.permissions]:
-        return redirect(url_for('users'))
-
     if request.method == 'POST':
         user_id = request.form.get('user_id')
         role_id = request.form.get('role_id')
@@ -718,9 +715,6 @@ def manage_roles():
 @login_required
 @permission_required('user_access')
 def create_role():
-    if current_user.role.name == 'admin':
-        return redirect(url_for('users'))
-
     if request.method == 'POST':
         role_name = request.form.get('role_name')
         permissions = request.form.getlist('permissions')
@@ -733,17 +727,15 @@ def create_role():
         db.session.commit()
         return redirect(url_for('create_role'))
 
+    role = Role.query.all()
     permissions = Permission.query.all()
-    return render_template('create_role.html', permissions=permissions)
+    return render_template('create_role.html', permissions=permissions, role=role)
 
 
 @app.route('/create_permission', methods=['GET', 'POST'])
 @login_required
 @permission_required('user_access')
 def create_permission():
-    if 'admin_access' not in [perm.name for perm in current_user.role.permissions]:
-        return redirect(url_for('users'))
-
     if request.method == 'POST':
         permission_name = request.form.get('permission_name')
         new_permission = Permission(name=permission_name)

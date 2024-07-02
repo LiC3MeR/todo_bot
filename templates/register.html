@@ -142,9 +142,17 @@ button:hover, input[type="button"]:hover {
             <input type="password" id="password" name="password" required><br>
             <label for="role">Роль:</label><br>
             <select id="role" name="role">
-            {% for role in roles %}
-              <option value="{{ role.id }}">{{ role.name }}</option>
-            {% endfor %}
+                {% for role in roles %}
+                    {% if role.name == 'root' %}
+                        {% if current_user.role.name == 'root' %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                        {% else %}
+                            <option value="{{ role.id }}" disabled>root</option>
+                        {% endif %}
+                    {% else %}
+                        <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endif %}
+                {% endfor %}
             </select><br>
             <input type="submit" value="Создать пользователя">
         </form>
@@ -158,20 +166,27 @@ button:hover, input[type="button"]:hover {
                     <th>Действия</th>
                 </tr>
             </thead>
-            <tbody>
-                {% for user in users %}
-                <tr class="userRow" data-user-id="{{ user.id }}" data-username="{{ user.username }}" data-user-role="{{ user.role }}">
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.usernick }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.role.name }}</td>
-                    <td>
-                        <button class="editUserBtn">Редактировать</button> <!-- Кнопка для редактирования -->
-                        <button class="deleteUserBtn">Удалить</button> <!-- Кнопка для удаления -->
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
+                <tbody>
+                    {% for user in users %}
+                        <tr class="userRow" data-user-id="{{ user.id }}" data-username="{{ user.username }}" data-user-role="{{ user.role }}">
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.usernick }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.role.name }}</td>
+                            <td>
+                            {% if current_user.role.name == 'admin' %}
+                                {% if user.role.name != 'root' %}
+                                    <button class="editUserBtn">Редактировать</button>
+                                    <button class="deleteUserBtn">Удалить</button>
+                                {% endif %}
+                            {% else %}
+                                <button class="editUserBtn">Редактировать</button>
+                                <button class="deleteUserBtn">Удалить</button>
+                            {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
         </table>
     </div>
     <div id="userModal" class="modal">
@@ -182,9 +197,17 @@ button:hover, input[type="button"]:hover {
             <p><strong>Имя пользователя: </strong><span id="modalUsername"></span></p>
             <p><strong>Роль:</strong></p>
             <select id="modalUserRole" name="userRole">
-            {% for role in roles %}
-              <option value="{{ role.id }}">{{ role.name }}</option>
-            {% endfor %}
+                {% for role in roles %}
+                    {% if role.name == 'root' %}
+                        {% if current_user.role.name == 'root' %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                        {% else %}
+                            <option value="{{ role.id }}" disabled>root</option>
+                        {% endif %}
+                    {% else %}
+                        <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endif %}
+                {% endfor %}
             </select><br>
             <button id="changeRoleBtn">Сохранить изменения роли</button>
             <div id="changePasswordForm" style="display: none;">

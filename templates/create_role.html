@@ -6,13 +6,20 @@
   </head>
   <body>
     <h1>Create Role</h1>
-    <a href="{{ url_for('users') }}">Back to Home</a>
     <form method="POST">
       <input type="text" name="role_name" placeholder="Role Name" required>
       <label>Permissions:</label>
-      {% for permission in permissions %}
-        <input type="checkbox" name="permissions" value="{{ permission.name }}"> {{ permission.name }}<br>
-      {% endfor %}
+        {% for permission in permissions %}
+          {% if permission.name == 'admin_access' %}
+            {% if current_user.role.name == 'root' %}
+              <input type="checkbox" name="permissions" value="{{ permission.name }}"> {{ permission.name }}<br>
+            {% else %}
+              <input type="checkbox" name="permissions" value="admin_access" disabled> admin_access<br>
+            {% endif %}
+          {% else %}
+            <input type="checkbox" name="permissions" value="{{ permission.name }}"> {{ permission.name }}<br>
+          {% endif %}
+        {% endfor %}
       <button type="submit">Create Role</button>
     </form>
   </body>
