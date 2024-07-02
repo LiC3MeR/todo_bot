@@ -23,7 +23,6 @@
         <ul>
             <li><a href="{{ url_for('index') }}">Home</a></li>
             {% if current_user.is_authenticated %}
-                {% if current_user.role == 'root' %}
                     {% if template_exists('indexfront.html') or template_exists('register.html') %}
                         <li class="menu-section">Администрирование</li>
                         {% if template_exists('indexfront.html') %}
@@ -42,7 +41,6 @@
                             <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
                         {% endif %}
                     {% endif %}
-                {% endif %}
             {% endif %}
         </ul>
     </nav>

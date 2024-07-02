@@ -107,7 +107,6 @@ button:hover, input[type="button"]:hover {
         <ul>
             <li><a href="{{ url_for('index') }}">Home</a></li>
             {% if current_user.is_authenticated %}
-                {% if current_user.role == 'root' %}
                     {% if template_exists('indexfront.html') or template_exists('register.html') %}
                         <li class="menu-section">Администрирование</li>
                         {% if template_exists('indexfront.html') %}
@@ -126,7 +125,6 @@ button:hover, input[type="button"]:hover {
                             <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
                         {% endif %}
                     {% endif %}
-                {% endif %}
             {% endif %}
         </ul>
     </nav>
@@ -144,8 +142,9 @@ button:hover, input[type="button"]:hover {
             <input type="password" id="password" name="password" required><br>
             <label for="role">Роль:</label><br>
             <select id="role" name="role">
-                <option value="user">Пользователь</option>
-                <option value="root">Администратор</option>
+            {% for role in roles %}
+              <option value="{{ role.id }}">{{ role.name }}</option>
+            {% endfor %}
             </select><br>
             <input type="submit" value="Создать пользователя">
         </form>
@@ -183,8 +182,9 @@ button:hover, input[type="button"]:hover {
             <p><strong>Имя пользователя: </strong><span id="modalUsername"></span></p>
             <p><strong>Роль:</strong></p>
             <select id="modalUserRole" name="userRole">
-                <option value="user">Пользователь</option>
-                <option value="admin">Администратор</option>
+            {% for role in roles %}
+              <option value="{{ role.id }}">{{ role.name }}</option>
+            {% endfor %}
             </select><br>
             <button id="changeRoleBtn">Сохранить изменения роли</button>
             <div id="changePasswordForm" style="display: none;">

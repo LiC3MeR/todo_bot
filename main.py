@@ -56,14 +56,19 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+roles_permissions = db.Table('roles_permissions',
+    db.Column('role_id', db.Integer, db.ForeignKey('role.id'), primary_key=True),
+    db.Column('permission_id', db.Integer, db.ForeignKey('permission.id'), primary_key=True)
+)
+
 class TaskAdmin(ModelView):
     column_list = ('content', 'description', 'priority', 'project_id', 'status', 'assignee')
 
 # Инициализация Flask-Admin
-root = Admin(app, name='Admin Panel', template_mode='bootstrap3')
+admin = Admin(app, name='Admin Panel', template_mode='bootstrap3')
 
 # Регистрация моделей для админки
-root.add_view(TaskAdmin(Task, db.session))
+admin.add_view(TaskAdmin(Task, db.session))
 
 @identity_loaded.connect_via(app)
 def on_identity_loaded(sender, identity):
@@ -99,6 +104,16 @@ def role_required(role):
         return decorated_view
     return wrapper
 
+def permission_required(permission_name):
+    def decorator(func):
+        @wraps(func)
+        def decorated_function(*args, **kwargs):
+            if not current_user.can(permission_name):
+                abort(403)  # 403 Forbidden
+            return func(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 def hash_password(password):
     # Генерируем хэш пароля
     hashed_password = generate_password_hash(password)
@@ -109,6 +124,15 @@ scheduler.start()
 
 def send_telegram_message(message):
     bot.send_message(TELEGRAM_CHAT_ID, message)
+
+class Permission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+class Role(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    permissions = db.relationship('Permission', secondary=roles_permissions, backref=db.backref('roles', lazy='dynamic'))
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -230,17 +254,24 @@ class User(db.Model, UserMixin):
     usernick = db.Column(db.String(50), unique=True, nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(80))
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     avatar_data = db.Column(db.LargeBinary)
     image_file = db.Column(db.String(20), nullable=False, default='logo.jpg')
+
+    # Define relationship with Role
+    role = db.relationship('Role', backref=db.backref('users', lazy=True))
 
     comments = db.relationship('Comment', back_populates='user', lazy=True)
 
     def is_active(self):
         return True
 
+    def can(self, permission_name):
+        permission = Permission.query.filter_by(name=permission_name).first()
+        return permission is not None and permission in self.role.permissions
+
     def display_name(self):
-        if self.role == 'root':
+        if self.role == 'admin':
             return f'ROOT | {self.usernick}'
         else:
             return self.usernick
@@ -364,7 +395,7 @@ def create_user():
         if not (username and password and role):
             return jsonify({'error': 'Не все поля были заполнены'}), 400
         hashed_password = generate_password_hash(password)
-        new_user = User(username=username, usernick=usernick, password=hashed_password, role=role)
+        new_user = User(username=username, usernick=usernick, password=hashed_password, role_id=role)
         db.session.add(new_user)
         db.session.commit()
         flash('Пользователь успешно создан', 'success')
@@ -391,7 +422,6 @@ def after_login():
 
 @app.route('/admin_panel')
 @login_required
-@role_required('root')
 def admin_panel():
     return 'Admin Panel'
 
@@ -510,7 +540,7 @@ def format_duration(seconds):
 
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
-@role_required('root')
+@permission_required('user_access')
 def admin():
     try:
         tasks = Task.query.all()
@@ -631,6 +661,7 @@ def add_comment(task_id):
 
 @app.route('/task_board')
 @login_required
+@permission_required('edit_content')
 def task_board():
     try:
         tasks = Task.query.all()
@@ -658,6 +689,67 @@ def task_board():
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
 
+
+@app.route('/manage_roles', methods=['GET', 'POST'])
+@login_required
+@permission_required('user_access')
+def manage_roles():
+    if 'admin_access' not in [perm.name for perm in current_user.role.permissions]:
+        return redirect(url_for('users'))
+
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        role_id = request.form.get('role_id')
+        user = User.query.get(user_id)
+        if user:
+            user.role_id = role_id
+            db.session.commit()
+            return redirect(url_for('manage_roles'))
+
+    users = User.query.all()
+    roles = Role.query.all()
+    return render_template('manage_roles.html', users=users, roles=roles)
+
+
+@app.route('/create_role', methods=['GET', 'POST'])
+@login_required
+@permission_required('user_access')
+def create_role():
+    if current_user.role.name == 'admin':
+        return redirect(url_for('users'))
+
+    if request.method == 'POST':
+        role_name = request.form.get('role_name')
+        permissions = request.form.getlist('permissions')
+        new_role = Role(name=role_name)
+        for permission_name in permissions:
+            permission = Permission.query.filter_by(name=permission_name).first()
+            if permission:
+                new_role.permissions.append(permission)
+        db.session.add(new_role)
+        db.session.commit()
+        return redirect(url_for('create_role'))
+
+    permissions = Permission.query.all()
+    return render_template('create_role.html', permissions=permissions)
+
+
+@app.route('/create_permission', methods=['GET', 'POST'])
+@login_required
+@permission_required('user_access')
+def create_permission():
+    if 'admin_access' not in [perm.name for perm in current_user.role.permissions]:
+        return redirect(url_for('users'))
+
+    if request.method == 'POST':
+        permission_name = request.form.get('permission_name')
+        new_permission = Permission(name=permission_name)
+        db.session.add(new_permission)
+        db.session.commit()
+        return redirect(url_for('create_permission'))
+
+    return render_template('create_permission.html')
+
 @app.route('/restart_calls')
 def restart_calls():
     # Выполняем команду supervisorctl restart calls с помощью subprocess
@@ -669,7 +761,6 @@ def restart_calls():
 
 @app.route('/task_nlu')
 @login_required
-@role_required('root')
 def task_board_nlu():
     try:
         tasks = Task.query.all()
@@ -810,14 +901,13 @@ def delete_task_api(task_id):
     return jsonify({"message": "Task deleted successfully"})
 @app.route('/users')
 @login_required
+@permission_required('user_access')
 def users():
-    if current_user.role != 'root':
-        abort(403)
-
     try:
         users = User.query.all()
         image_filename = current_user.image_file.decode('utf-8')
-        return render_template('register.html', users=users, user=current_user, image_filename=image_filename)
+        roles = Role.query.all()
+        return render_template('register.html', users=users, user=current_user, image_filename=image_filename, roles=roles)
     except Exception as error:
         print("Error fetching users:", error)
         return jsonify({"error": str(error)}), 500
@@ -1009,4 +1099,4 @@ def template_exists(template_name):
 app.jinja_env.globals['template_exists'] = template_exists
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)

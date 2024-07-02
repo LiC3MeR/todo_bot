@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Create Permission</title>
+  </head>
+  <body>
+    <h1>Create Permission</h1>
+    <a href="{{ url_for('users') }}">Back to Home</a>
+    <form method="POST">
+      <input type="text" name="permission_name" placeholder="Permission Name" required>
+      <button type="submit">Create Permission</button>
+    </form>
+  </body>
+</html>
