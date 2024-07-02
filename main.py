@@ -271,10 +271,13 @@ class User(db.Model, UserMixin):
         return permission is not None and permission in self.role.permissions
 
     def display_name(self):
-        if self.role == 'admin':
+        if self.role_id == 1:
             return f'ROOT | {self.usernick}'
+        elif self.role_id == 4:
+            return f'Admin | {self.usernick}'
         else:
             return self.usernick
+
 
 def init_db():
     with app.app_context():
