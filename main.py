@@ -273,7 +273,7 @@ class User(db.Model, UserMixin):
     def display_name(self):
         if self.role_id == 1:
             return f'ROOT | {self.usernick}'
-        elif self.role_id == 4:
+        elif self.role_id == 2:
             return f'Admin | {self.usernick}'
         else:
             return self.usernick
