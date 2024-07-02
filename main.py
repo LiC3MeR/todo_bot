@@ -436,7 +436,7 @@ def change_role():
 
     user = User.query.get(user_id)
     if user:
-        user.role = new_role
+        user.role_id = new_role
         db.session.commit()
         return jsonify(success=True, message="Роль успешно изменена.")
     else:
