@@ -12,3 +12,6 @@ flask_bcrypt
 flask_admin
 werkzeug
 flask_login
+flask_principal
+apscheduler
+pymysql
