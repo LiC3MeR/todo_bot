@@ -78,6 +78,13 @@ def on_identity_loaded(sender, identity):
     if hasattr(current_user, 'role'):
         identity.provides.add(RoleNeed(current_user.role))
 
+@app.route('/all_routes')
+def all_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append(str(rule))
+    return '<br>'.join(routes)
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
