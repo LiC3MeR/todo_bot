@@ -278,6 +278,13 @@ class User(db.Model, UserMixin):
         else:
             return self.usernick
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'usernick': self.usernick,
+            'username': self.username,
+            'role': self.role.name
+        }
 
 def init_db():
     with app.app_context():
@@ -710,27 +717,58 @@ def manage_roles():
     roles = Role.query.all()
     return render_template('manage_roles.html', users=users, roles=roles)
 
-
-@app.route('/create_role', methods=['GET', 'POST'])
+@app.route('/roles', methods=['GET', 'POST'])
 @login_required
-@permission_required('user_access')
-def create_role():
+def role_management():
     if request.method == 'POST':
-        role_name = request.form.get('role_name')
-        permissions = request.form.getlist('permissions')
-        new_role = Role(name=role_name)
-        for permission_name in permissions:
-            permission = Permission.query.filter_by(name=permission_name).first()
-            if permission:
-                new_role.permissions.append(permission)
-        db.session.add(new_role)
-        db.session.commit()
-        return redirect(url_for('create_role'))
+        if 'role_name' in request.form:
+            # Handle role creation
+            role_name = request.form['role_name']
+            selected_permissions = request.form.getlist('permissions')
+            # Create the new role and assign permissions
+            new_role = Role(name=role_name)
+            db.session.add(new_role)
+            db.session.commit()
+            for permission_name in selected_permissions:
+                permission = Permission.query.filter_by(name=permission_name).first()
+                if permission:
+                    new_role.permissions.append(permission)
+            db.session.commit()
+            flash('Role created successfully!', 'success')
+        elif 'role_id' in request.form:
+            # Handle role update
+            role_id = request.form['role_id']
+            selected_permissions = request.form.getlist('permissions')
+            role = Role.query.get(role_id)
+            if role:
+                role.permissions = []
+                for permission_name in selected_permissions:
+                    permission = Permission.query.filter_by(name=permission_name).first()
+                    if permission:
+                        role.permissions.append(permission)
+                db.session.commit()
+                flash('Role updated successfully!', 'success')
+        return redirect(url_for('role_management'))
 
-    role = Role.query.all()
     permissions = Permission.query.all()
-    return render_template('create_role.html', permissions=permissions, role=role)
+    roles = Role.query.all()
+    image_filename = current_user.image_file.decode('utf-8')
+    return render_template('create_role.html', permissions=permissions, roles=roles, image_filename=image_filename)
 
+@app.route('/get_role_permissions/<int:role_id>', methods=['GET'])
+@login_required
+def get_role_permissions(role_id):
+    role = Role.query.get(role_id)
+    if not role:
+        return jsonify({"permissions": []}), 404
+    permissions = [permission.name for permission in role.permissions]
+    return jsonify({"permissions": permissions})
+
+@app.route('/select_role', methods=['POST'])
+def select_role():
+    role_id = request.form.get('role_id')
+    # Handle role selection logic here
+    return redirect(url_for('role_management'))
 
 @app.route('/create_permission', methods=['GET', 'POST'])
 @login_required
@@ -906,6 +944,12 @@ def users():
     except Exception as error:
         print("Error fetching users:", error)
         return jsonify({"error": str(error)}), 500
+
+@app.route('/users_by_role/<int:role_id>')
+def users_by_role(role_id):
+    role = Role.query.get_or_404(role_id)
+    users = User.query.filter_by(role_id=role.id).all()
+    return jsonify(users=[user.to_dict() for user in users])
 
 @app.route('/change_password', methods=['POST'])
 @login_required
