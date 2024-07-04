@@ -144,4 +144,12 @@ sudo mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON $DB1.* T
 sudo mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON $DB2.* TO '$DB_USER'@'$DB_HOST';"
 sudo mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
 
-echo "Setup complete. Databases '$DB1' and '$DB2' created with user '$DB_USER'."
+sudo mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "USE tasks;
+INSERT INTO `user` (`id`, `username`, `password`, `role`) VALUES
+(1, 'root', '$2b$12$dXO9ntlQCc7rSsIz0/M6dOXmayZCdVljKGADtly0Ev0dm3folqBRm', 'admin');"
+
+sudo mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "USE tasks_test;
+INSERT INTO `user` (`id`, `username`, `password`, `role`) VALUES
+(1, 'root', '$2b$12$dXO9ntlQCc7rSsIz0/M6dOXmayZCdVljKGADtly0Ev0dm3folqBRm', 'admin');"
+
+echo "Установка закончена. Для запуска в тестовом режиме "python3 main.py dev 5000". Для запуска в режиме Прода "python3 main.py prod 5000" Данные для входа root root"
