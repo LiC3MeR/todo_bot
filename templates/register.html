@@ -9,86 +9,66 @@
 </head>
 <body>
 <style>
-.modal label {
-    margin-bottom: -15px;
-    margin-top: 20px;
+#rolesList {
+    list-style-type: none;
+    padding: 0;
 }
 
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.5);
+#rolesList li {
+    padding: 10px;
+    border-bottom: 1px solid #333;
 }
 
-.modal-content {
-    background-color: #1e1e1e;
-    margin: 10% auto;
-    padding: 20px;
-    border: 1px solid #333;
-    border-radius: 5px;
-    color: #e0e0e0;
-}
-
-.modal-content h3 {
-    color: #fff;
-}
-
-.modal-content p {
-    color: #bbb;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
+#rolesList li:hover {
+    background-color: #333;
     cursor: pointer;
 }
 
-.close:hover,
-.close:focus {
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-label {
-    font-weight: bold;
-    color: #e0e0e0;
-}
-
-input[type="password"],
 input[type="text"],
+textarea,
 select {
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
     background-color: #2e2e2e;
-    border: 1px solid #333;
-    border-radius: 4px;
     color: #e0e0e0;
 }
 
-button, input[type="button"] {
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-    border: 1px solid #333;
+h1 {
+    color: #555;
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+#notification {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
     padding: 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-button:hover, input[type="button"]:hover {
-    background-color: #333;
+    border-radius: 5px;
 }
 </style>
+
+{% if current_user.role_id != 1 %}
+    <style>
+        .edit-root {
+            display: none; /* Hide edit controls for non-root users */
+        }
+    </style>
+{% endif %}
+
     <header>
         <div class="logo">
             <img src="/static/logo.jpg" alt="Логотип">
@@ -106,26 +86,13 @@ button:hover, input[type="button"]:hover {
         <div class="menu-toggle">☰</div>
         <ul>
             <li><a href="{{ url_for('index') }}">Home</a></li>
-            {% if current_user.is_authenticated %}
-                    {% if template_exists('indexfront.html') or template_exists('register.html') %}
-                        <li class="menu-section">Администрирование</li>
-                        {% if template_exists('indexfront.html') %}
-                            <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
-                        {% endif %}
-                        {% if template_exists('register.html') %}
-                            <li><a href="{{ url_for('users') }}">Пользователи</a></li>
-                        {% endif %}
-                    {% endif %}
-                    {% if template_exists('task_board.html') or template_exists('delete_task.html') %}
-                        <li class="menu-section">Задачи</li>
-                        {% if template_exists('task_board.html') %}
-                            <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
-                        {% endif %}
-                        {% if template_exists('delete_task.html') %}
-                            <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
-                        {% endif %}
-                    {% endif %}
-            {% endif %}
+        <li class="menu-section">Администрирование</li>
+            <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+            <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+            <li><a href="{{ url_for('role_management') }}">Роли</a></li>
+        <li class="menu-section">Задачи</li>
+            <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+            <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
         </ul>
     </nav>
     <div class="content">
@@ -156,38 +123,29 @@ button:hover, input[type="button"]:hover {
             </select><br>
             <input type="submit" value="Создать пользователя">
         </form>
-        <table id="userTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Имя пользователя</th>
-                    <th>Логин</th>
-                    <th>Роль</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-                <tbody>
-                    {% for user in users %}
-                        <tr class="userRow" data-user-id="{{ user.id }}" data-username="{{ user.username }}" data-user-role="{{ user.role }}">
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.usernick }}</td>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.role.name }}</td>
-                            <td>
-                            {% if current_user.role.name == 'admin' %}
-                                {% if user.role.name != 'root' %}
-                                    <button class="editUserBtn">Редактировать</button>
-                                    <button class="deleteUserBtn">Удалить</button>
-                                {% endif %}
-                            {% else %}
-                                <button class="editUserBtn">Редактировать</button>
-                                <button class="deleteUserBtn">Удалить</button>
-                            {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
+        <h2>Список ролей</h2>
+        <ul id="rolesList">
+            {% for role in roles %}
+                <li class="roleItem" data-role-id="{{ role.id }}">{{ role.name }}</li>
+            {% endfor %}
+        </ul>
+        <div id="usersContainer" style="display:none;">
+            <h3>Пользователи с выбранной ролью</h3>
+            <table id="usersTable" class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Имя пользователя</th>
+                        <th>Логин</th>
+                        <th>Роль</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <!-- Users will be populated here -->
                 </tbody>
-        </table>
+            </table>
+        </div>
     </div>
     <div id="userModal" class="modal">
         <div class="modal-content">
@@ -225,6 +183,122 @@ button:hover, input[type="button"]:hover {
             <button id="showChangeUsernameFormBtn">Сменить никнейм</button>
         </div>
     </div>
+
+<script>
+    // Assuming role_id and currentUserRole are available from backend
+    const role_id = {{ role_id }};
+    const currentUserRole = '{{ current_user_role }}'; // Replace with actual way to get current user's role
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if current user is not 'root', disable or hide edit controls
+        if (currentUserRole !== 'root') {
+            // Disable or hide edit controls
+            document.querySelectorAll('.edit-root').forEach(el => {
+                el.style.display = 'none'; // or el.disabled = true; for disabling buttons
+            });
+        }
+    });
+</script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const rolesList = document.getElementById('rolesList');
+            const usersContainer = document.getElementById('usersContainer');
+            const usersTableBody = document.getElementById('usersTableBody');
+
+            rolesList.addEventListener('click', function(event) {
+                if (event.target.classList.contains('roleItem')) {
+                    const roleId = event.target.getAttribute('data-role-id');
+                    fetch(`/users_by_role/${roleId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            usersTableBody.innerHTML = '';
+                            data.users.forEach(user => {
+                                const row = `<tr class="userRow" data-user-id="${user.id}" data-username="${user.username}" data-user-role="${user.role}">
+                                    <td>${user.id}</td>
+                                    <td>${user.usernick}</td>
+                                    <td>${user.username}</td>
+                                    <td>${user.role}</td>
+                                    <td>
+                                        {% if current_user.role.name == 'admin' %}
+                                            {% if user.role.name != 'root' %}
+                                                <button class="editUserBtn">Редактировать</button>
+                                                <button class="deleteUserBtn">Удалить</button>
+                                            {% endif %}
+                                        {% else %}
+                                            <button class="editUserBtn">Редактировать</button>
+                                            <button class="deleteUserBtn">Удалить</button>
+                                        {% endif %}
+                                    </td>
+                                </tr>`;
+                                usersTableBody.innerHTML += row;
+                            });
+
+                            // Добавляем обработчики событий на кнопки "Редактировать" и "Удалить"
+                            addEditDeleteHandlers();
+
+                            usersContainer.style.display = 'block';
+                        });
+                }
+            });
+
+            function addEditDeleteHandlers() {
+                var deleteUserBtns = document.getElementsByClassName("deleteUserBtn");
+
+                Array.from(deleteUserBtns).forEach(function(deleteBtn) {
+                    deleteBtn.addEventListener("click", function(event) {
+                        event.preventDefault();
+                        var userId = deleteBtn.closest(".userRow").getAttribute("data-user-id");
+
+                        fetch('/delete_user', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                user_id: userId
+                            })
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                alert("Пользователь успешно удален");
+                                location.reload();
+                            } else {
+                                response.json().then(data => {
+                                    alert("Ошибка: " + data.error);
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при выполнении запроса:', error);
+                            alert("Произошла ошибка при выполнении запроса. Пожалуйста, попробуйте еще раз.");
+                        });
+                    });
+                });
+
+                var editUserBtns = document.getElementsByClassName("editUserBtn");
+
+                Array.from(editUserBtns).forEach(function(editBtn) {
+                    editBtn.addEventListener("click", function(event) {
+                        event.preventDefault();
+                        var userRow = event.target.closest(".userRow");
+                        var userId = userRow.getAttribute("data-user-id");
+                        var username = userRow.getAttribute("data-username");
+                        var userRole = userRow.getAttribute("data-user-role");
+
+                        // Заполняем данные модального окна
+                        modalUserId.textContent = userId;
+                        modalUsername.textContent = username;
+                        document.getElementById("modalUserRole").value = userRole;
+
+                        // Отображаем модальное окно
+                        modal.style.display = "block";
+                    });
+                });
+            }
+        });
+    </script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var menuToggle = document.querySelector('.menu-toggle');

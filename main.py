@@ -78,6 +78,13 @@ def on_identity_loaded(sender, identity):
     if hasattr(current_user, 'role'):
         identity.provides.add(RoleNeed(current_user.role))
 
+@app.route('/all_routes')
+def all_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append(str(rule))
+    return '<br>'.join(routes)
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -256,7 +263,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     avatar_data = db.Column(db.LargeBinary)
-    image_file = db.Column(db.String(20), nullable=False, default='logo.jpg')
+    image_file = db.Column(db.String(255), nullable=False, default='logo.jpg')
 
     # Define relationship with Role
     role = db.relationship('Role', backref=db.backref('users', lazy=True))
@@ -278,6 +285,13 @@ class User(db.Model, UserMixin):
         else:
             return self.usernick
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'usernick': self.usernick,
+            'username': self.username,
+            'role': self.role.name
+        }
 
 def init_db():
     with app.app_context():
@@ -376,12 +390,12 @@ def update_task(id):
 @app.route('/menu')
 @login_required
 def menu():
-    image_filename = current_user.image_file.decode('utf-8')
-    return render_template('menu.html', user=current_user,  image_filename=image_filename)
+    image_filename = current_user.image_file if current_user.image_file else ''
+    return render_template('menu.html', user=current_user, image_filename=image_filename)
 
 @app.route('/register')
 def reg():
-    image_filename = current_user.image_file.decode('utf-8')
+    image_filename = current_user.image_file if current_user.image_file else ''
     return render_template('reg.html', user=current_user,  image_filename=image_filename)
 
 @app.route('/create_user', methods=['POST'])
@@ -491,7 +505,7 @@ def index():
         try:
             # Обработка GET запроса (получение данных)
             tasks = Task.query.all()
-            image_filename = current_user.image_file.decode('utf-8')
+            image_filename = current_user.image_file if current_user.image_file else ''
             return render_template('index.html', tasks=tasks, user=current_user, image_filename=image_filename)
         except Exception as error:
             print("Error fetching tasks:", error)
@@ -563,7 +577,7 @@ def admin():
             status = section_status_mapping.get(task.status, 'В очереди')
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
-                image_filename = current_user.image_file.decode('utf-8')
+                image_filename = current_user.image_file if current_user.image_file else ''
                 return render_template('indexfront.html', user=current_user,  tasks_by_section=tasks_by_section, image_filename=image_filename)
 
     except Exception as error:
@@ -605,7 +619,7 @@ def get_tasks():
 @app.route('/update_task_status', methods=['POST'])
 def update_task_status():
     try:
-        task_id = request.json['task_id']
+        task_id = int(request.json.get('task_id'))  # Convert task_id to int
         new_status = request.json['status']
 
         section_status_mapping = {
@@ -626,7 +640,8 @@ def update_task_status():
         else:
             return jsonify({"error": "Некорректный формат статуса"}), 400
 
-        task = Task.query.filter_by(task_id=task_id).first()
+        # Query using task_id instead of id
+        task = Task.query.filter_by(id=task_id).first()
         if task is None:
             return jsonify({"error": "Задача не найдена"}), 404
 
@@ -634,33 +649,31 @@ def update_task_status():
         old_status = id_to_status_mapping.get(old_status_id, 'Неизвестный статус')
         task.status = new_section_id
         db.session.commit()
+
         user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
-        send_telegram_message(f"Пользователь {user_name} обновил статус задачи {task_id} изменен с '{old_status}' на '{new_status}'")
+        send_telegram_message(f"Пользователь {user_name} обновил статус задачи {task.task_id} изменен с '{old_status}' на '{new_status}'")
 
         return jsonify({"message": "Статус задачи изменён"})
     except Exception as error:
         print("Ошибка обновления статуса задачи:", error)
         return jsonify({"error": str(error)}), 500
 
+
 @app.route('/task/<int:task_id>/add_comment', methods=['POST'])
 @login_required
 def add_comment(task_id):
-    try:
-        task = Task.query.get_or_404(task_id)
-        comment_content = request.form.get('comment_content')
-
-        if not comment_content:
-            return jsonify({"error": "Comment content is required"}), 400
-
-        new_comment = Comment(content=comment_content, task_id=task.id, user_id=current_user.id)
-        db.session.add(new_comment)
-        db.session.commit()
-
-        return jsonify({"message": "Comment added successfully"}), 201
-
-    except Exception as error:
-        print(f"Error adding comment to task {task_id}: {error}")
-        return jsonify({"error": f"Error adding comment to task {task_id}"}), 500
+    task = Task.query.get_or_404(task_id)
+    content = request.form.get('content')
+    if content:
+        try:
+            comment = Comment(content=content, task_id=task.id, user_id=current_user.id)
+            db.session.add(comment)
+            db.session.commit()
+            return jsonify({"message": "Комментарий успешно добавлен"}), 201
+        except Exception as e:
+            print("Error adding comment:", e)
+            return jsonify({"error": str(e)}), 500
+    return jsonify({"error": "Контент не может быть пустым"}), 400
 
 @app.route('/task_board')
 @login_required
@@ -685,7 +698,7 @@ def task_board():
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
-        image_filename = current_user.image_file.decode('utf-8')
+        image_filename = current_user.image_file if current_user.image_file else ''
         return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename, task_id=Task.id)
 
     except Exception as error:
@@ -710,27 +723,58 @@ def manage_roles():
     roles = Role.query.all()
     return render_template('manage_roles.html', users=users, roles=roles)
 
-
-@app.route('/create_role', methods=['GET', 'POST'])
+@app.route('/roles', methods=['GET', 'POST'])
 @login_required
-@permission_required('user_access')
-def create_role():
+def role_management():
     if request.method == 'POST':
-        role_name = request.form.get('role_name')
-        permissions = request.form.getlist('permissions')
-        new_role = Role(name=role_name)
-        for permission_name in permissions:
-            permission = Permission.query.filter_by(name=permission_name).first()
-            if permission:
-                new_role.permissions.append(permission)
-        db.session.add(new_role)
-        db.session.commit()
-        return redirect(url_for('create_role'))
+        if 'role_name' in request.form:
+            # Handle role creation
+            role_name = request.form['role_name']
+            selected_permissions = request.form.getlist('permissions')
+            # Create the new role and assign permissions
+            new_role = Role(name=role_name)
+            db.session.add(new_role)
+            db.session.commit()
+            for permission_name in selected_permissions:
+                permission = Permission.query.filter_by(name=permission_name).first()
+                if permission:
+                    new_role.permissions.append(permission)
+            db.session.commit()
+            flash('Role created successfully!', 'success')
+        elif 'role_id' in request.form:
+            # Handle role update
+            role_id = request.form['role_id']
+            selected_permissions = request.form.getlist('permissions')
+            role = Role.query.get(role_id)
+            if role:
+                role.permissions = []
+                for permission_name in selected_permissions:
+                    permission = Permission.query.filter_by(name=permission_name).first()
+                    if permission:
+                        role.permissions.append(permission)
+                db.session.commit()
+                flash('Role updated successfully!', 'success')
+        return redirect(url_for('role_management'))
 
-    role = Role.query.all()
     permissions = Permission.query.all()
-    return render_template('create_role.html', permissions=permissions, role=role)
+    roles = Role.query.all()
+    image_filename = current_user.image_file if current_user.image_file else ''
+    return render_template('create_role.html', permissions=permissions, roles=roles, image_filename=image_filename)
 
+@app.route('/get_role_permissions/<int:role_id>', methods=['GET'])
+@login_required
+def get_role_permissions(role_id):
+    role = Role.query.get(role_id)
+    if not role:
+        return jsonify({"permissions": []}), 404
+    permissions = [permission.name for permission in role.permissions]
+    return jsonify({"permissions": permissions})
+
+@app.route('/select_role', methods=['POST'])
+def select_role():
+    role_id = request.form.get('role_id')
+    # Handle role selection logic here
+    return redirect(url_for('role_management'))
 
 @app.route('/create_permission', methods=['GET', 'POST'])
 @login_required
@@ -774,7 +818,7 @@ def task_board_nlu():
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
 
-        image_filename = current_user.image_file.decode('utf-8')
+        image_filename = current_user.image_file if current_user.image_file else ''
         return render_template('task_boardnlu.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename)
     except Exception as error:
         print("Error fetching tasks:", error)
@@ -900,12 +944,18 @@ def delete_task_api(task_id):
 def users():
     try:
         users = User.query.all()
-        image_filename = current_user.image_file.decode('utf-8')
+        image_filename = current_user.image_file if current_user.image_file else ''
         roles = Role.query.all()
         return render_template('register.html', users=users, user=current_user, image_filename=image_filename, roles=roles)
     except Exception as error:
         print("Error fetching users:", error)
         return jsonify({"error": str(error)}), 500
+
+@app.route('/users_by_role/<int:role_id>')
+def users_by_role(role_id):
+    role = Role.query.get_or_404(role_id)
+    users = User.query.filter_by(role_id=role.id).all()
+    return jsonify(users=[user.to_dict() for user in users])
 
 @app.route('/change_password', methods=['POST'])
 @login_required
@@ -1006,7 +1056,7 @@ def get_users():
 @app.route('/profile', methods=['GET'])
 @login_required
 def profile():
-    image_filename = current_user.image_file.decode('utf-8')
+    image_filename = current_user.image_file if current_user.image_file else ''
     return render_template('profile.html', user=current_user, image_filename=image_filename)
 
 
@@ -1080,7 +1130,7 @@ def update_password():
 @login_required
 def show_delete_task():
     tasks = Task.query.all()
-    image_filename = current_user.image_file.decode('utf-8')
+    image_filename = current_user.image_file if current_user.image_file else ''
     return render_template('delete_task.html', tasks=tasks, user=current_user, image_filename=image_filename)
 
 def template_exists(template_name):

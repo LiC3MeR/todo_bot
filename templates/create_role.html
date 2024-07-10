@@ -1,26 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Create Role</title>
-  </head>
-  <body>
-    <h1>Create Role</h1>
-    <form method="POST">
-      <input type="text" name="role_name" placeholder="Role Name" required>
-      <label>Permissions:</label>
-        {% for permission in permissions %}
-          {% if permission.name == 'admin_access' %}
-            {% if current_user.role.name == 'root' %}
-              <input type="checkbox" name="permissions" value="{{ permission.name }}"> {{ permission.name }}<br>
-            {% else %}
-              <input type="checkbox" name="permissions" value="admin_access" disabled> admin_access<br>
-            {% endif %}
-          {% else %}
-            <input type="checkbox" name="permissions" value="{{ permission.name }}"> {{ permission.name }}<br>
-          {% endif %}
-        {% endfor %}
-      <button type="submit">Create Role</button>
-    </form>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+    <title>Role Management</title>
+</head>
+<body class="dark-mode">
+<style>
+    .avatar-us {
+        height: 300px;
+        width: 300px;
+    }
+</style>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username">{{ current_user.display_name() }}</span>
+            <img id="user-avatar" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="profile-button">Профиль</button>
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="menu-section">Администрирование</li>
+            <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
+            <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+            <li><a href="{{ url_for('role_management') }}">Роли</a></li>
+        <li class="menu-section">Задачи</li>
+            <li><a href="{{ url_for('task_board') }}">Редактор задач</a></li>
+            <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1 class="text-center my-4">Управление ролями</h1>
+        <main class="content">
+            <section>
+                <h2>Создать роль</h2>
+                <form id="create-role-form" class="update-form" method="POST" action="{{ url_for('role_management') }}">
+                    <label for="role-name">Название роли:</label>
+                    <input type="text" id="role-name" name="role_name" class="form-control" placeholder="Role Name" required>
+                    <label>Permissions:</label>
+                    {% for permission in permissions %}
+                        <div class="form-check">
+                            {% if permission.name == 'admin_access' %}
+                                {% if current_user.role.name == 'root' %}
+                                    <input type="checkbox" class="form-check-input create-permission" name="permissions" value="{{ permission.name }}" id="perm-create-{{ permission.name }}">
+                                    <label class="form-check-label" for="perm-create-{{ permission.name }}">{{ permission.name }}</label>
+                                {% else %}
+                                    <input type="checkbox" class="form-check-input create-permission" name="permissions" value="admin_access" id="perm-create-admin_access" disabled>
+                                    <label class="form-check-label" for="perm-create-admin_access">admin_access</label>
+                                {% endif %}
+                            {% else %}
+                                <input type="checkbox" class="form-check-input create-permission" name="permissions" value="{{ permission.name }}" id="perm-create-{{ permission.name }}">
+                                <label class="form-check-label" for="perm-create-{{ permission.name }}">{{ permission.name }}</label>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <input type="submit" value="Создать роль" class="btn btn-primary mt-3">
+                </form>
+            </section>
+
+            <section>
+                <h2>Выбор роли</h2>
+                <form id="select-role-form" class="update-form" method="POST" action="{{ url_for('role_management') }}">
+                    <label for="role-id">Роль:</label>
+                    <select id="role-id" name="role_id" class="form-control">
+                        <option value="" disabled selected>Выберите роль</option>
+                        {% for role in roles %}
+                            {% if role.name == 'root' %}
+                                {% if current_user.role.name == 'root' %}
+                                    <option value="{{ role.id }}">{{ role.name }}</option>
+                                {% else %}
+                                    <option value="{{ role.id }}" disabled>root</option>
+                                {% endif %}
+                            {% else %}
+                                <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <label>Permissions:</label>
+                    {% for permission in permissions %}
+                        <div class="form-check">
+                            {% if permission.name == 'admin_access' %}
+                                {% if current_user.role.name == 'root' %}
+                                    <input type="checkbox" class="form-check-input select-permission" name="permissions" value="{{ permission.name }}" id="perm-{{ permission.name }}">
+                                    <label class="form-check-label" for="perm-{{ permission.name }}">{{ permission.name }}</label>
+                                {% else %}
+                                    <input type="checkbox" class="form-check-input select-permission" name="permissions" value="admin_access" id="perm-admin_access" disabled>
+                                    <label class="form-check-label" for="perm-admin_access">admin_access</label>
+                                {% endif %}
+                            {% else %}
+                                <input type="checkbox" class="form-check-input select-permission" name="permissions" value="{{ permission.name }}" id="perm-{{ permission.name }}">
+                                <label class="form-check-label" for="perm-{{ permission.name }}">{{ permission.name }}</label>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <input type="submit" value="Обновить роль" class="btn btn-primary mt-3">
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+
+        const userAvatar = document.getElementById('user-avatar');
+        const userMenu = document.getElementById('user-menu');
+        const logoutButton = document.getElementById('logout-button');
+        const profileButton = document.getElementById('profile-button');
+
+        // Показать/скрыть меню при клике на аватарку
+        userAvatar.addEventListener('click', function() {
+            userMenu.classList.toggle('show');
+        });
+
+        // Скрыть меню при клике вне его области
+        document.addEventListener('click', function(event) {
+            if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                userMenu.classList.remove('show');
+            }
+        });
+
+        // Обработчик для кнопки "Выйти"
+        logoutButton.addEventListener('click', function() {
+            window.location.href = "{{ url_for('logout') }}";
+        });
+
+        // Обработчик для кнопки "Профиль"
+        profileButton.addEventListener('click', function() {
+            window.location.href = "{{ url_for('profile') }}";
+        });
+
+        // Handle role selection and update permissions checkboxes
+        const roleSelect = document.getElementById('role-id');
+        const selectPermissionsCheckboxes = document.querySelectorAll('input.select-permission');
+
+        roleSelect.addEventListener('change', function() {
+            const roleId = this.value;
+            if (roleId) {
+                fetch(`/get_role_permissions/${roleId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        selectPermissionsCheckboxes.forEach(checkbox => {
+                            checkbox.checked = data.permissions.includes(checkbox.value);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching role permissions:', error));
+            } else {
+                selectPermissionsCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
+        });
+    </script>
+</body>
 </html>
