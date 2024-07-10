@@ -263,7 +263,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     avatar_data = db.Column(db.LargeBinary)
-    image_file = db.Column(db.String(20), nullable=False, default='logo.jpg')
+    image_file = db.Column(db.String(255), nullable=False, default='logo.jpg')
 
     # Define relationship with Role
     role = db.relationship('Role', backref=db.backref('users', lazy=True))
