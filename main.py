@@ -280,7 +280,7 @@ class User(db.Model, UserMixin):
     def display_name(self):
         if self.role_id == 1:
             return f'ROOT | {self.usernick}'
-        elif self.role_id == 2:
+        elif self.role_id == 3:
             return f'Admin | {self.usernick}'
         else:
             return self.usernick
@@ -725,11 +725,17 @@ def manage_roles():
 
 @app.route('/roles', methods=['GET', 'POST'])
 @login_required
+@permission_required('admin_access')
 def role_management():
     if request.method == 'POST':
         if 'role_name' in request.form:
             # Handle role creation
             role_name = request.form['role_name']
+            existing_role = Role.query.filter_by(name=role_name).first()
+            if existing_role:
+                flash('Role already exists!', 'error')
+                return redirect(url_for('role_management'))
+
             selected_permissions = request.form.getlist('permissions')
             # Create the new role and assign permissions
             new_role = Role(name=role_name)
@@ -741,6 +747,7 @@ def role_management():
                     new_role.permissions.append(permission)
             db.session.commit()
             flash('Role created successfully!', 'success')
+
         elif 'role_id' in request.form:
             # Handle role update
             role_id = request.form['role_id']
@@ -754,6 +761,7 @@ def role_management():
                         role.permissions.append(permission)
                 db.session.commit()
                 flash('Role updated successfully!', 'success')
+
         return redirect(url_for('role_management'))
 
     permissions = Permission.query.all()
@@ -1048,7 +1056,7 @@ def run_script():
 def get_users():
     try:
         users = User.query.all()
-        user_list = [{'id': user.id, 'username': user.username} for user in users]
+        user_list = [{'id': user.id, 'username': user.usernick} for user in users]
         return jsonify(user_list)
     except Exception as e:
         return jsonify({'error': str(e)})
