@@ -115,11 +115,24 @@ def permission_required(permission_name):
     def decorator(func):
         @wraps(func)
         def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return login_manager.unauthorized()
+
+            # Проверяем, есть ли у пользователя разрешение
             if not current_user.can(permission_name):
                 abort(403)  # 403 Forbidden
+
             return func(*args, **kwargs)
         return decorated_function
     return decorator
+
+
+@app.context_processor
+def utility_processor():
+    def check_permission(permission_name):
+        return current_user.can(permission_name)
+
+    return dict(permission_required=permission_required, check_permission=check_permission)
 
 def hash_password(password):
     # Генерируем хэш пароля
@@ -273,8 +286,12 @@ class User(db.Model, UserMixin):
     def is_active(self):
         return True
 
+    # В функции can в модели User
     def can(self, permission_name):
         permission = Permission.query.filter_by(name=permission_name).first()
+        if permission:
+            print(
+                f"Checking permission '{permission_name}' for user '{self.username}': {permission in self.role.permissions}")
         return permission is not None and permission in self.role.permissions
 
     def display_name(self):
@@ -559,7 +576,7 @@ def format_duration(seconds):
 
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
-@permission_required('Админ старница')
+@permission_required('Админ страница')
 def admin():
     try:
         tasks = Task.query.all()
