@@ -52,13 +52,13 @@
                     <label>Permissions:</label>
                     {% for permission in permissions %}
                         <div class="form-check">
-                            {% if permission.name == 'admin_access' %}
+                            {% if permission.name == 'root' %}
                                 {% if current_user.role.name == 'root' %}
                                     <input type="checkbox" class="form-check-input create-permission" name="permissions" value="{{ permission.name }}" id="perm-create-{{ permission.name }}">
                                     <label class="form-check-label" for="perm-create-{{ permission.name }}">{{ permission.name }}</label>
                                 {% else %}
-                                    <input type="checkbox" class="form-check-input create-permission" name="permissions" value="admin_access" id="perm-create-admin_access" disabled>
-                                    <label class="form-check-label" for="perm-create-admin_access">admin_access</label>
+                                    <input type="checkbox" class="form-check-input create-permission" name="permissions" value="root" id="perm-create-admin_access" disabled>
+                                    <label class="form-check-label" for="perm-create-admin_access">root</label>
                                 {% endif %}
                             {% else %}
                                 <input type="checkbox" class="form-check-input create-permission" name="permissions" value="{{ permission.name }}" id="perm-create-{{ permission.name }}">
@@ -91,13 +91,13 @@
                     <label>Permissions:</label>
                     {% for permission in permissions %}
                         <div class="form-check">
-                            {% if permission.name == 'admin_access' %}
+                            {% if permission.name == 'root' %}
                                 {% if current_user.role.name == 'root' %}
                                     <input type="checkbox" class="form-check-input select-permission" name="permissions" value="{{ permission.name }}" id="perm-{{ permission.name }}">
                                     <label class="form-check-label" for="perm-{{ permission.name }}">{{ permission.name }}</label>
                                 {% else %}
-                                    <input type="checkbox" class="form-check-input select-permission" name="permissions" value="admin_access" id="perm-admin_access" disabled>
-                                    <label class="form-check-label" for="perm-admin_access">admin_access</label>
+                                    <input type="checkbox" class="form-check-input select-permission" name="permissions" value="root" id="perm-admin_access" disabled>
+                                    <label class="form-check-label" for="perm-admin_access">root</label>
                                 {% endif %}
                             {% else %}
                                 <input type="checkbox" class="form-check-input select-permission" name="permissions" value="{{ permission.name }}" id="perm-{{ permission.name }}">

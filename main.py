@@ -95,7 +95,7 @@ def unauthorized_callback():
 
 # Настройки Telegram бота из переменных окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7P0dBDFvUj1wPlxPWVsH0")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "-1002075733635")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "1212068138")
 
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
 
@@ -280,7 +280,7 @@ class User(db.Model, UserMixin):
     def display_name(self):
         if self.role_id == 1:
             return f'ROOT | {self.usernick}'
-        elif self.role_id == 3:
+        elif self.role_id == 2:
             return f'Admin | {self.usernick}'
         else:
             return self.usernick
@@ -389,6 +389,7 @@ def update_task(id):
 
 @app.route('/menu')
 @login_required
+@permission_required('Меню')
 def menu():
     image_filename = current_user.image_file if current_user.image_file else ''
     return render_template('menu.html', user=current_user, image_filename=image_filename)
@@ -467,6 +468,7 @@ def phpmyadmin():
     return redirect('/phpmyadmin')
 @app.route('/', methods=['GET', 'POST'])
 @login_required
+@permission_required('Главная')
 def index():
     if request.method == 'POST':
         task_content = request.form['task_content']
@@ -557,7 +559,7 @@ def format_duration(seconds):
 
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
-@permission_required('user_access')
+@permission_required('Админ старница')
 def admin():
     try:
         tasks = Task.query.all()
@@ -677,7 +679,7 @@ def add_comment(task_id):
 
 @app.route('/task_board')
 @login_required
-@permission_required('edit_content')
+@permission_required('Доска задач')
 def task_board():
     try:
         tasks = Task.query.all()
@@ -708,7 +710,7 @@ def task_board():
 
 @app.route('/manage_roles', methods=['GET', 'POST'])
 @login_required
-@permission_required('user_access')
+@permission_required('Роли')
 def manage_roles():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
@@ -725,7 +727,7 @@ def manage_roles():
 
 @app.route('/roles', methods=['GET', 'POST'])
 @login_required
-@permission_required('admin_access')
+@permission_required('Роли')
 def role_management():
     if request.method == 'POST':
         if 'role_name' in request.form:
@@ -786,7 +788,7 @@ def select_role():
 
 @app.route('/create_permission', methods=['GET', 'POST'])
 @login_required
-@permission_required('user_access')
+@permission_required('Роли')
 def create_permission():
     if request.method == 'POST':
         permission_name = request.form.get('permission_name')
@@ -948,7 +950,7 @@ def delete_task_api(task_id):
     return jsonify({"message": "Task deleted successfully"})
 @app.route('/users')
 @login_required
-@permission_required('user_access')
+@permission_required('Пользователи')
 def users():
     try:
         users = User.query.all()
@@ -1063,6 +1065,7 @@ def get_users():
 
 @app.route('/profile', methods=['GET'])
 @login_required
+@permission_required('Профиль')
 def profile():
     image_filename = current_user.image_file if current_user.image_file else ''
     return render_template('profile.html', user=current_user, image_filename=image_filename)
@@ -1136,6 +1139,7 @@ def update_password():
 
 @app.route('/show_delete_task')
 @login_required
+@permission_required('Удаление задач')
 def show_delete_task():
     tasks = Task.query.all()
     image_filename = current_user.image_file if current_user.image_file else ''
