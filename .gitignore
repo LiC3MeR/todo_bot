@@ -9,3 +9,4 @@ static/*.gif
 static/*.mp4
 static/*.avi
 static/*.mov
+.env
