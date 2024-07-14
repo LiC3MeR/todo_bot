@@ -1030,25 +1030,6 @@ def delete_user():
     else:
         return jsonify({'error': 'Метод не поддерживается'}), 405
 
-@app.route('/delete_task', methods=['POST'])
-def delete_task():
-    try:
-        task_id = request.form.get('task_id')
-        if not task_id:
-            return jsonify({"error": "Task ID is required"}), 400
-
-        task = Task.query.filter_by(task_id=task_id).first()
-        if task is None:
-            return jsonify({"error": "Task not found"}), 404
-
-        db.session.delete(task)
-        db.session.commit()
-        send_telegram_message(f"Задача удалена: {task.content}")
-        return jsonify({"message": "Task deleted successfully"})
-    except Exception as error:
-        print("Error deleting task:", error)
-        return jsonify({"error": str(error)}), 500
-
 @app.route('/delete_tasks', methods=['POST'])
 def delete_tasks():
     try:
