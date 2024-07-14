@@ -150,27 +150,53 @@
             }
         });
     </script>
+
     <script>
-        function deleteSelectedTasks() {
-            const form = document.getElementById('deleteForm');
-            const formData = new FormData(form);
-            fetch('/delete_tasks', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Network response was not ok.');
-            })
-            .then(data => {
-                showNotification(data.message);
-                // При необходимости обновите список задач на странице
-            })
-            .catch(error => console.error('Error:', error));
-        }
+        // Определение функции showNotification
+    function showNotification(message) {
+        // Создание элемента уведомления
+        const notification = document.createElement('div');
+        notification.classList.add('notification'); // Применение стилей уведомления
+        notification.textContent = message; // Установка текста уведомления
+
+        // Добавление уведомления на страницу
+        document.body.appendChild(notification);
+
+        // Удаление уведомления через 3 секунды
+        setTimeout(function() {
+            notification.remove();
+        }, 3000); // Удалить уведомление через 3 секунды (можно изменить время)
+    }
     </script>
+
+    <script>
+    function deleteSelectedTasks() {
+        const form = document.getElementById('deleteForm');
+        const formData = new FormData(form);
+        fetch('/delete_tasks', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data); // Проверяем данные от сервера
+            showNotification(data.message); // Показываем уведомление
+
+            // Добавляем задержку перед обновлением страницы
+            setTimeout(function() {
+                console.log('Reloading page...');
+                location.reload(); // Обновляем страницу
+            }); // 1 секунда задержки (можно увеличить, если необходимо)
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    </script>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
