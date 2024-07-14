@@ -1,9 +1,9 @@
-from todoist_api_python.api import TodoistAPI
+# Initialize the Flask application and SQLAlchemy
+app = Flask(__name__)
+db = SQLAlchemy(app)
 
-api = TodoistAPI("376f6ca4763413e176fd2a0eadd30af37f44cbea")
+# Import models after initializing db to avoid circular imports
+from models import User, Task, Comment
 
-try:
-    tasks = api.get_tasks(project_id=2322606786)
-    print(tasks)
-except Exception as error:
-    print(error)
+# Create all tables defined in models
+db.create_all()

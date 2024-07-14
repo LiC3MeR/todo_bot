@@ -211,3 +211,35 @@
         .user-menu button:hover {
             background-color: #333;
         }
+
+        .flash-messages {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            width: 300px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .flash-message {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .flash-messages.dark-mode {
+            background-color: #333; /* Цвет фона */
+            color: #fff; /* Цвет текста */
+            border: 1px solid #666; /* Цвет границы */
+        }
+
+        .flash-messages.dark-mode .flash-message {
+            background-color: #444; /* Цвет фона сообщения */
+            border: 1px solid #666; /* Цвет границы сообщения */
+            color: #fff; /* Цвет текста сообщения */
+        }

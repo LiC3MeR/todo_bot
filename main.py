@@ -23,9 +23,10 @@ from models import User, Task
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
 import logging
+import mimetypes
 
 app = Flask(__name__, static_url_path='/static')
-app.config['UPLOAD_FOLDER'] = './static'
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'static')
 
 handler = logging.StreamHandler()
 handler.setLevel(logging.ERROR)
@@ -295,19 +296,21 @@ class User(db.Model, UserMixin):
         return permission is not None and permission in self.role.permissions
 
     def display_name(self):
-        if self.role_id == 1:
-            return f'ROOT | {self.usernick}'
-        elif self.role_id == 2:
-            return f'Admin | {self.usernick}'
-        else:
-            return self.usernick
+        if self.role:
+            # Check if the role has the specific permission
+            permission_name = "Отображать название организации перед именем"
+            permission = Permission.query.filter_by(name=permission_name).first()
+            if permission and permission in self.role.permissions:
+                return f'{self.role.name} | {self.usernick}'
+        return self.usernick
 
     def to_dict(self):
         return {
             'id': self.id,
             'usernick': self.usernick,
             'username': self.username,
-            'role': self.role.name
+            'role': self.role.name if self.role else None,
+            'display_name': self.display_name()  # Include the display name in the dictionary
         }
 
 def init_db():
@@ -592,16 +595,22 @@ def admin():
             'Готово': []
         }
 
+        # Собираем задачи по разделам
         for task in tasks:
             status = section_status_mapping.get(task.status, 'В очереди')
             if status in tasks_by_section:
                 tasks_by_section[status].append(task)
-                image_filename = current_user.image_file if current_user.image_file else ''
-                return render_template('indexfront.html', user=current_user,  tasks_by_section=tasks_by_section, image_filename=image_filename)
+
+        # Получаем имя файла изображения текущего пользователя
+        image_filename = current_user.image_file if current_user.image_file else ''
+
+        # Возвращаем шаблон только после того, как все данные подготовлены
+        return render_template('indexfront.html', user=current_user, tasks_by_section=tasks_by_section, image_filename=image_filename)
 
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
+
 
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
@@ -1093,7 +1102,7 @@ def profile():
 def update_avatar():
     if 'new-avatar' in request.files:
         new_avatar = request.files['new-avatar']
-        if new_avatar.filename != '':
+        if new_avatar.filename != '' and allowed_file(new_avatar.filename):
             filename = secure_filename(new_avatar.filename)
             new_avatar.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             current_user.image_file = filename
@@ -1104,11 +1113,32 @@ def update_avatar():
                 db.session.rollback()
                 flash(f'Ошибка при сохранении аватара: {str(e)}', 'error')
         else:
-            flash('Не выбран файл для загрузки.', 'error')
+            flash('Недопустимый формат файла для загрузки.', 'error')
     else:
         flash('Файл не был передан.', 'error')
 
     return redirect(url_for('profile'))
+
+def allowed_file(filename):
+    if '.' not in filename:
+        return False
+
+    ext = filename.rsplit('.', 1)[1].lower()
+
+    if ext not in {'jpg', 'jpeg', 'png', 'gif'}:
+        return False
+
+    # Проверяем тип MIME файла
+    mime_type, _ = mimetypes.guess_type(filename)
+    if mime_type is None or not mime_type.startswith('image'):
+        return False
+
+    # Дополнительная проверка на безопасность: предотвращение загрузки опасных файлов
+    if ext in {'exe', 'bat', 'sh', 'php'}:  # примеры опасных расширений
+        return False
+
+    return True
+
 
 # Маршрут для обновления имени пользователя
 @app.route('/update_name', methods=['POST'])

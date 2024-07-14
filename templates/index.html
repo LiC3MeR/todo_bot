@@ -17,6 +17,38 @@
         margin-bottom: 50px;
         color: #e0e0e0;
     }
+
+    .flash-messages {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    width: 300px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .flash-message {
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .flash-messages.dark-mode {
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #666;
+    }
+
+    .flash-messages.dark-mode .flash-message {
+        background-color: #444;
+        border: 1px solid #666;
+        color: #fff;
+    }
 </style>
     <header>
         <div class="logo">
@@ -31,17 +63,22 @@
             </div>
         </div>
     </header>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages dark-mode">
+                {% for message in messages %}
+                    <div class="flash-message">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
     <nav class="menu">
         <div class="menu-toggle">☰</div>
         <ul>
             {% if current_user.is_authenticated %}
-                {% if check_permission('Главная') %}
-                    <li><a href="{{ url_for('index') }}">Home</a></li>
-                {% endif %}
                 <li class="menu-section">Администрирование</li>
-                {% if check_permission('Админ страница') %}
-                    <li><a href="{{ url_for('admin') }}">Админ панель</a></li>
-                {% endif %}
                 {% if check_permission('Пользователи') %}
                     <li><a href="{{ url_for('users') }}">Пользователи</a></li>
                 {% endif %}
@@ -99,6 +136,21 @@
     </div>
 
     <button id="theme-toggle">Сменить тему</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var flashMessagesContainer = document.querySelector('.flash-messages.dark-mode');
+            if (flashMessagesContainer) {
+                setTimeout(function() {
+                    flashMessagesContainer.style.transition = 'opacity 0.3s ease'; // Добавляем анимацию исчезновения
+                    flashMessagesContainer.style.opacity = '0'; // Устанавливаем непрозрачность на 0
+                    setTimeout(function() {
+                        flashMessagesContainer.parentNode.removeChild(flashMessagesContainer); // Удаляем элемент из DOM
+                    }, 300); // Даем 0.3 секунды на полное исчезновение анимации (если есть)
+                }, 3000); // Закрываем уведомление через 5 секунд (5000 миллисекунд)
+            }
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

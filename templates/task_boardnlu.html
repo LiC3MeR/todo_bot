@@ -124,6 +124,19 @@
         </div>
     </header>
 <body>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <nav class="menu">
         <div class="menu-toggle">☰</div>
         <ul>
@@ -195,6 +208,17 @@
             </div>
         </div>
     </div>
+    <script>
+        // Функция для скрытия уведомлений через 5 секунд
+        document.addEventListener('DOMContentLoaded', function() {
+            var flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.display = 'none';
+                }, 5000); // Закрываем уведомление через 5 секунд (5000 миллисекунд)
+            });
+        });
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var menuToggle = document.querySelector('.menu-toggle');
