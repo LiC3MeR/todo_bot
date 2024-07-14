@@ -24,6 +24,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
 import logging
 import mimetypes
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, static_url_path='/static')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'static')
@@ -95,8 +98,8 @@ def unauthorized_callback():
     return redirect(url_for('login'))
 
 # Настройки Telegram бота из переменных окружения
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6734859669:AAFPaSB8FwPPXS7P0dBDFvUj1wPlxPWVsH0")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "1212068138")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
 
