@@ -104,17 +104,32 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
 
-def role_required(role):
-    def wrapper(fn):
-        @wraps(fn)
-        def decorated_view(*args, **kwargs):
+
+def role_required(role_id_required):
+    def decorator(view_function):
+        @wraps(view_function)
+        def wrapper(*args, **kwargs):
             if not current_user.is_authenticated:
                 return login_manager.unauthorized()
-            if current_user.role != role:
-                return abort(403)  # Доступ запрещен
-            return fn(*args, **kwargs)
-        return decorated_view
-    return wrapper
+
+            # Check if the current user has role id 1
+            if current_user.role_id == 1:
+                # If the current user's role id is 1, grant access
+                return view_function(*args, **kwargs)
+
+            # For other roles, check if the role id matches the required id
+            if current_user.role_id != role_id_required:
+                # If not, return a 403 Forbidden error
+                abort(403)
+
+            # If the current user has the required role id, proceed to the view function
+            return view_function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+role_id = int(os.getenv('ROLE_ID'))
 
 def permission_required(permission_name):
     def decorator(func):
@@ -124,7 +139,7 @@ def permission_required(permission_name):
                 return login_manager.unauthorized()
 
             # Проверяем, есть ли у пользователя разрешение
-            if not current_user.can(permission_name):
+            if not current_user.can(permission_name) and current_user.role_id != role_id:
                 abort(403)  # 403 Forbidden
 
             return func(*args, **kwargs)
@@ -1109,12 +1124,6 @@ def get_users():
     try:
         users = User.query.all()
         user_list = [{'id': user.id, 'username': user.usernick} for user in users]
-        user_tasks = user.tasks  # Предполагаем, что у пользователя есть задачи, которые хранятся в user.tasks
-        contribution_months = get_contribution_data(user_tasks)
-        current_date = datetime.now()
-        first_day_of_month = current_date.replace(day=1)
-        _, days_in_month = monthrange(current_date.year, current_date.month)
-        last_day_of_month = first_day_of_month + timedelta(days=days_in_month - 1)
 
         return jsonify(user_list)
     except Exception as e:

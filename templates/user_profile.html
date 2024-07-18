@@ -119,20 +119,20 @@
         <ul>
             {% if current_user.is_authenticated %}
                 <li class="menu-section">Администрирование</li>
-                {% if check_permission('Пользователи') %}
+                {% if check_permission('Пользователи') or check_permission('root') %}
                     <li><a href="{{ url_for('users') }}">Пользователи</a></li>
                 {% endif %}
-                {% if check_permission('Роли') %}
+                {% if check_permission('Роли') or check_permission('root') %}
                     <li><a href="{{ url_for('role_management') }}">Роли</a></li>
                 {% endif %}
-                {% if check_permission('Возможность просмотреть профиль пользователя') %}
+                {% if check_permission('Возможность просмотреть профиль пользователя') or check_permission('root') %}
                     <li><a href="{{ url_for('user_list') }}">Профили пользователей</a></li>
                 {% endif %}
                 <li class="menu-section">Задачи</li>
-                {% if check_permission('Доска задач') %}
+                {% if check_permission('Доска задач') or check_permission('root') %}
                     <li><a href="{{ url_for('task_board') }}">Доска задач</a></li>
                 {% endif %}
-                {% if check_permission('Удаление задач') %}
+                {% if check_permission('Удаление задач') or check_permission('root') %}
                     <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
                 {% endif %}
             {% endif %}
