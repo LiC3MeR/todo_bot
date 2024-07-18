@@ -150,7 +150,7 @@
                 <div class="day {% if tasks_count %}active{% endif %}">
                     {{ day }}
                     <div class="tooltip">
-                        {{ current_date.strftime('%Y-%m-%d') }} - {{ tasks_count }} tasks
+                        {{ day.strftime('%Y-%m-%d') }} - {{ tasks_count }} tasks
                     </div>
                 </div>
             {% endfor %}
