@@ -8,44 +8,6 @@
     <title>Profile</title>
 </head>
 <body class="dark-mode">
-<style>
-    .avatar-us {
-        height: 300px;
-        width: 300px;
-    }
-
-    .flash-messages {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    width: 300px;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    padding: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .flash-message {
-        margin-bottom: 10px;
-        padding: 10px;
-        background-color: #fff;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-    }
-
-    .flash-messages.dark-mode {
-        background-color: #333;
-        color: #fff;
-        border: 1px solid #666;
-    }
-
-    .flash-messages.dark-mode .flash-message {
-        background-color: #444;
-        border: 1px solid #666;
-        color: #fff;
-    }
-</style>
     <header>
         <div class="logo">
             <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Логотип">

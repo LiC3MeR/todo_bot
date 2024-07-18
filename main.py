@@ -25,6 +25,7 @@ from apscheduler.triggers.date import DateTrigger
 import logging
 import mimetypes
 from dotenv import load_dotenv
+import calendar as cal
 
 load_dotenv()
 
@@ -284,6 +285,7 @@ class User(db.Model, UserMixin):
 
     # Define relationship with Role
     role = db.relationship('Role', backref=db.backref('users', lazy=True))
+    tasks = db.relationship('Task', backref='assigned_user', lazy=True)
 
     comments = db.relationship('Comment', back_populates='user', lazy=True)
 
@@ -382,6 +384,36 @@ def comments(task_id):
             return jsonify(comments)
 
     return render_template('comments.html', task=task, comments=task.comments)
+
+from calendar import monthrange  # добавляем импорт
+from collections import defaultdict
+
+def get_contribution_data(user_tasks):
+    contribution_data = defaultdict(int)
+    for task in user_tasks:
+        # Используем время создания задачи как дату, когда задача была добавлена
+        created_date = task.created_at.date()
+        contribution_data[created_date] += 1
+    return sorted(contribution_data.items())
+
+
+@app.route('/user/<int:user_id>')
+def user_profile(user_id):
+    user = User.query.get_or_404(user_id)
+    user_tasks = user.tasks  # Предполагаем, что у пользователя есть задачи, которые хранятся в user.tasks
+    contribution_months = get_contribution_data(user_tasks)
+
+    current_date = datetime.now()
+    first_day_of_month = current_date.replace(day=1)
+    _, days_in_month = monthrange(current_date.year, current_date.month)
+    last_day_of_month = first_day_of_month + timedelta(days=days_in_month - 1)
+
+    return render_template('user_profile.html',
+                           user=user,
+                           contribution_months=contribution_months,
+                           current_date=current_date,
+                           first_day_of_month=first_day_of_month,
+                           last_day_of_month=last_day_of_month)
 
 @app.route('/update_task/<id>', methods=['POST'])
 def update_task(id):
@@ -1069,6 +1101,13 @@ def get_users():
     try:
         users = User.query.all()
         user_list = [{'id': user.id, 'username': user.usernick} for user in users]
+        user_tasks = user.tasks  # Предполагаем, что у пользователя есть задачи, которые хранятся в user.tasks
+        contribution_months = get_contribution_data(user_tasks)
+        current_date = datetime.now()
+        first_day_of_month = current_date.replace(day=1)
+        _, days_in_month = monthrange(current_date.year, current_date.month)
+        last_day_of_month = first_day_of_month + timedelta(days=days_in_month - 1)
+
         return jsonify(user_list)
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -1077,9 +1116,22 @@ def get_users():
 @login_required
 @permission_required('Профиль')
 def profile():
-    image_filename = current_user.image_file if current_user.image_file else ''
-    return render_template('profile.html', user=current_user, image_filename=image_filename)
+    user_tasks = current_user.tasks  # Получаем задачи текущего пользователя
+    contribution_months = get_contribution_data(user_tasks)
 
+    current_date = datetime.now()
+    first_day_of_month = current_date.replace(day=1)
+    _, days_in_month = monthrange(current_date.year, current_date.month)
+    last_day_of_month = first_day_of_month + timedelta(days=days_in_month - 1)
+
+    # Передаем данные текущего пользователя и другие переменные в шаблон
+    return render_template('profile.html',
+                           user=current_user,  # Передаем текущего пользователя
+                           image_filename=current_user.image_file if current_user.image_file else '',
+                           contribution_months=contribution_months,
+                           current_date=current_date,
+                           first_day_of_month=first_day_of_month,
+                           last_day_of_month=last_day_of_month)
 
 @app.route('/update_avatar', methods=['POST'])
 @login_required

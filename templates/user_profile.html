@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - {{ user.username }}</title>
+    <style>
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .day {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+            position: relative; /* Для позиционирования подсказки */
+        }
+        .day.active {
+            background-color: lightgreen;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none; /* Скрываем по умолчанию */
+        }
+        .day:hover .tooltip {
+            display: block; /* Отображаем при наведении */
+        }
+    </style>
+</head>
+<body>
+    <h1>User Profile - {{ user.username }}</h1>
+    <h2>Task Contribution for {{ current_date.strftime('%B %Y') }}</h2>
+
+    <!-- Мини-календарь -->
+    <div class="calendar">
+        {% for day, tasks_count in contribution_months %}
+            <div class="day {% if tasks_count %}active{% endif %}">
+                {{ day }}
+                <div class="tooltip">
+                    {{ current_date.strftime('%Y-%m-%d') }} - {{ tasks_count }} tasks
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <!-- JavaScript для отображения подсказок -->
+    <script>
+        // Находим все элементы с классом "day"
+        var days = document.querySelectorAll('.day');
+
+        // Для каждого элемента добавляем обработчик события наведения мыши
+        days.forEach(function(day) {
+            // Находим элемент подсказки внутри дня
+            var tooltip = day.querySelector('.tooltip');
+            // При наведении на день показываем подсказку
+            day.addEventListener('mouseenter', function() {
+                tooltip.style.display = 'block';
+            });
+            // При уходе мыши скрываем подсказку
+            day.addEventListener('mouseleave', function() {
+                tooltip.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

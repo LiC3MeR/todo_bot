@@ -318,3 +318,73 @@ select {
             padding: 10px;
             border-radius: 5px;
         }
+
+    .avatar-us {
+        height: 300px;
+        width: 300px;
+    }
+
+    .flash-messages {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    width: 300px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .flash-message {
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .flash-messages.dark-mode {
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #666;
+    }
+
+    .flash-messages.dark-mode .flash-message {
+        background-color: #444;
+        border: 1px solid #666;
+        color: #fff;
+    }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .day {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+            position: relative; /* Для позиционирования подсказки */
+        }
+        .day.active {
+            background-color: lightgreen;
+        }
+
+.tooltip {
+    position: absolute;
+    background-color: #ffffff;
+    color: #000000;
+    padding: 5px;
+    border-radius: 5px;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    z-index: 1000; /* Убедитесь, что этот z-index выше других элементов */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+        .day:hover .tooltip {
+            display: block; /* Показываем при наведении на .day */
+        }
