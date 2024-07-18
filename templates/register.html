@@ -132,11 +132,11 @@ input[type="submit"]:hover {
             <label for="role">Роль:</label><br>
             <select id="role" name="role">
                 {% for role in roles %}
-                    {% if role.name == 'root' %}
-                        {% if current_user.role.name == 'root' %}
+                    {% if role.name == 'ROOT' %}
+                        {% if current_user.role.name == 'ROOT' %}
                             <option value="{{ role.id }}">{{ role.name }}</option>
                         {% else %}
-                            <option value="{{ role.id }}" disabled>root</option>
+                            <option value="{{ role.id }}" disabled>ROOT</option>
                         {% endif %}
                     {% else %}
                         <option value="{{ role.id }}">{{ role.name }}</option>
@@ -178,11 +178,11 @@ input[type="submit"]:hover {
             <p><strong>Роль:</strong></p>
             <select id="modalUserRole" name="userRole">
                 {% for role in roles %}
-                    {% if role.name == 'root' %}
-                        {% if current_user.role.name == 'root' %}
+                    {% if role.name == 'ROOT' %}
+                        {% if current_user.role.name == 'ROOT' %}
                             <option value="{{ role.id }}">{{ role.name }}</option>
                         {% else %}
-                            <option value="{{ role.id }}" disabled>root</option>
+                            <option value="{{ role.id }}" disabled>ROOT</option>
                         {% endif %}
                     {% else %}
                         <option value="{{ role.id }}">{{ role.name }}</option>
