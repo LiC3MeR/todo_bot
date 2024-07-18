@@ -10,3 +10,4 @@ static/*.mp4
 static/*.avi
 static/*.mov
 .env
+tasks.db
