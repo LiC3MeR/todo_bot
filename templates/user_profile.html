@@ -3,23 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
     <title>User Profile - {{ user.username }}</title>
     <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .menu {
+            background-color: #1f1f1f;
+            width: 250px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: -250px; /* начальное положение скрыто за экраном */
+            transition: left 0.3s;
+            z-index: 1000;
+        }
+
+        .content {
+            margin-left: 20px; /* Optional for content spacing */
+            padding: 10px;
+        }
+
+        .user-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .user-list li {
+            padding: 10px 0;
+        }
+
+        .user-list li a {
+            text-decoration: none;
+            color: #e0e0e0;
+            display: block;
+        }
+
+        .user-list li a:hover {
+            background-color: #333;
+        }
+
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 5px;
             margin-bottom: 20px;
         }
+
         .day {
             padding: 10px;
             border: 1px solid #ccc;
             text-align: center;
             position: relative; /* Для позиционирования подсказки */
+            background-color: #f0f0f0;
         }
+
         .day.active {
-            background-color: lightgreen;
+            margin-top: 50px;
+            padding: 20px;
+            background-color: #c1e5b6;
+            color: black;
         }
+
         .tooltip {
             position: absolute;
             background-color: rgba(0, 0, 0, 0.7);
@@ -31,44 +83,142 @@
             transform: translateX(-50%);
             display: none; /* Скрываем по умолчанию */
         }
+
         .day:hover .tooltip {
             display: block; /* Отображаем при наведении */
         }
     </style>
 </head>
 <body>
-    <h1>User Profile - {{ user.username }}</h1>
-    <h2>Task Contribution for {{ current_date.strftime('%B %Y') }}</h2>
-
-    <!-- Мини-календарь -->
-    <div class="calendar">
-        {% for day, tasks_count in contribution_months %}
-            <div class="day {% if tasks_count %}active{% endif %}">
-                {{ day }}
-                <div class="tooltip">
-                    {{ current_date.strftime('%Y-%m-%d') }} - {{ tasks_count }} tasks
-                </div>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username">{{ current_user.display_name() }}</span>
+            <img id="user-avatar" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="profile-button">Профиль</button>
+                <button id="logout-button">Выйти</button>
             </div>
-        {% endfor %}
-    </div>
-    <!-- JavaScript для отображения подсказок -->
-    <script>
-        // Находим все элементы с классом "day"
-        var days = document.querySelectorAll('.day');
+        </div>
+    </header>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages dark-mode">
+                {% for message in messages %}
+                    <div class="flash-message">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            {% if current_user.is_authenticated %}
+                <li class="menu-section">Администрирование</li>
+                {% if check_permission('Пользователи') %}
+                    <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                {% endif %}
+                {% if check_permission('Роли') %}
+                    <li><a href="{{ url_for('role_management') }}">Роли</a></li>
+                {% endif %}
+                {% if check_permission('Возможность просмотреть профиль пользователя') %}
+                    <li><a href="{{ url_for('user_list') }}">Профили пользователей</a></li>
+                {% endif %}
+                <li class="menu-section">Задачи</li>
+                {% if check_permission('Доска задач') %}
+                    <li><a href="{{ url_for('task_board') }}">Доска задач</a></li>
+                {% endif %}
+                {% if check_permission('Удаление задач') %}
+                    <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                {% endif %}
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="content">
+        <h1>Профиль пользователя - {{ user.username }}</h1>
 
-        // Для каждого элемента добавляем обработчик события наведения мыши
-        days.forEach(function(day) {
-            // Находим элемент подсказки внутри дня
-            var tooltip = day.querySelector('.tooltip');
-            // При наведении на день показываем подсказку
-            day.addEventListener('mouseenter', function() {
-                tooltip.style.display = 'block';
-            });
-            // При уходе мыши скрываем подсказку
-            day.addEventListener('mouseleave', function() {
-                tooltip.style.display = 'none';
-            });
+        <h2>Выполненые задачи за всё время</h2>
+
+        <!-- Мини-календарь -->
+        <div class="calendar">
+            {% for day, tasks_count in contribution_months %}
+                <div class="day {% if tasks_count %}active{% endif %}">
+                    {{ day }}
+                    <div class="tooltip">
+                        {{ current_date.strftime('%Y-%m-%d') }} - {{ tasks_count }} tasks
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+
+        const userAvatar = document.getElementById('user-avatar');
+        const userMenu = document.getElementById('user-menu');
+        const logoutButton = document.getElementById('logout-button');
+        const profileButton = document.getElementById('profile-button');
+
+        // Показать/скрыть меню при клике на аватарку
+        userAvatar.addEventListener('click', function() {
+            userMenu.classList.toggle('show');
+        });
+
+        // Скрыть меню при клике вне его области
+        document.addEventListener('click', function(event) {
+            if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                userMenu.classList.remove('show');
+            }
+        });
+
+        // Обработчик для кнопки "Выйти"
+        logoutButton.addEventListener('click', function() {
+            if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                window.location.href = '/logout';
+            }
+        });
+
+        // Обработчик для кнопки "Профиль"
+        profileButton.addEventListener('click', function() {
+            window.location.href = '{{ url_for("profile") }}';
         });
     </script>
+
+        <!-- JavaScript для отображения подсказок -->
+        <script>
+            // Находим все элементы с классом "day"
+            var days = document.querySelectorAll('.day');
+
+            // Для каждого элемента добавляем обработчик события наведения мыши
+            days.forEach(function(day) {
+                // Находим элемент подсказки внутри дня
+                var tooltip = day.querySelector('.tooltip');
+                // При наведении на день показываем подсказку
+                day.addEventListener('mouseenter', function() {
+                    tooltip.style.display = 'block';
+                });
+                // При уходе мыши скрываем подсказку
+                day.addEventListener('mouseleave', function() {
+                    tooltip.style.display = 'none';
+                });
+            });
+        </script>
+    </div>
 </body>
 </html>

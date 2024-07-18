@@ -85,6 +85,9 @@
                 {% if check_permission('Роли') %}
                     <li><a href="{{ url_for('role_management') }}">Роли</a></li>
                 {% endif %}
+                {% if check_permission('Возможность просмотреть профиль пользователя') %}
+                    <li><a href="{{ url_for('user_list') }}">Профили пользователей</a></li>
+                {% endif %}
                 <li class="menu-section">Задачи</li>
                 {% if check_permission('Доска задач') %}
                     <li><a href="{{ url_for('task_board') }}">Доска задач</a></li>

@@ -396,8 +396,15 @@ def get_contribution_data(user_tasks):
         contribution_data[created_date] += 1
     return sorted(contribution_data.items())
 
+@app.route('/user')
+@permission_required('Возможность просмотреть профиль пользователя')
+def user_list():
+    users = User.query.all()
+    image_filename = current_user.image_file if current_user.image_file else ''
+    return render_template('user_list.html', users=users, image_filename=image_filename)
 
 @app.route('/user/<int:user_id>')
+@permission_required('Возможность просмотреть профиль пользователя')
 def user_profile(user_id):
     user = User.query.get_or_404(user_id)
     user_tasks = user.tasks  # Предполагаем, что у пользователя есть задачи, которые хранятся в user.tasks
@@ -407,13 +414,14 @@ def user_profile(user_id):
     first_day_of_month = current_date.replace(day=1)
     _, days_in_month = monthrange(current_date.year, current_date.month)
     last_day_of_month = first_day_of_month + timedelta(days=days_in_month - 1)
-
+    image_filename = current_user.image_file if current_user.image_file else ''
     return render_template('user_profile.html',
                            user=user,
                            contribution_months=contribution_months,
                            current_date=current_date,
                            first_day_of_month=first_day_of_month,
-                           last_day_of_month=last_day_of_month)
+                           last_day_of_month=last_day_of_month,
+                           image_filename=image_filename)
 
 @app.route('/update_task/<id>', methods=['POST'])
 def update_task(id):
