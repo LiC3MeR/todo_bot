@@ -36,6 +36,7 @@ class Task(db.Model):
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
     duration = db.Column(db.Integer)
+    tags = db.Column(db.String(30), nullable=True)
 
     comments = db.relationship('Comment', backref='task_related', lazy=True)
 

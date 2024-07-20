@@ -200,6 +200,7 @@ class Task(db.Model):
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
     duration = db.Column(db.Integer)
+    tags = db.Column(db.String(30), nullable=True)
 
     comments = db.relationship('Comment', backref='task_related', lazy=True)
 
@@ -686,6 +687,7 @@ def get_tasks():
             task_status = section_status_mapping.get(status, 'В очереди')
             # Форматирование даты создания для удобного отображения
             created_at = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Не указана"
+            tags = task.tags
             assigned_user_name = None
             if task.user:
                 assigned_user_name = task.user.usernick
@@ -694,7 +696,8 @@ def get_tasks():
                 "content": task.content,
                 "status": task_status,
                 "created_at": created_at,
-                "assigned_to": assigned_user_name
+                "assigned_to": assigned_user_name,
+                "tag": tags
             })
 
         return jsonify({"tasks": task_list})
