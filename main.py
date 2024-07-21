@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 import pytz
 import sys
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, DateTime, LargeBinary
+from sqlalchemy import Column, Integer, DateTime, LargeBinary, func
 from functools import wraps
 from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity
 from jinja2 import TemplateNotFound
@@ -788,7 +788,9 @@ def task_board():
                 tasks_by_section[status].append(task)
 
         image_filename = current_user.image_file if current_user.image_file else ''
-        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename, task_id=Task.id)
+        existing_tags = db.session.query(Task.tags.distinct()).all()
+        tags_list = [tag[0] for tag in existing_tags if tag[0]]  # Фильтруем пустые значения, если они есть
+        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename, task_id=Task.id, existing_tags=tags_list)
 
     except Exception as error:
         print("Error fetching tasks:", error)
@@ -925,12 +927,16 @@ def task_board_nlu():
 @login_required
 def create_task():
     try:
-        task_content = request.json.get('task_content')
-        priority = request.json.get('priority')
-        description = request.json.get('description')
-        customer = request.json.get('customer')
-        department = request.json.get('department')
-        assigned_to_id = request.json.get('assigned_to')
+        # Получаем данные из JSON-запроса
+        data = request.json
+        task_content = data.get('task_content')
+        priority = data.get('priority')
+        description = data.get('description')
+        customer = data.get('customer')
+        department = data.get('department')
+        assigned_to_id = data.get('assigned_to')
+        selected_tag = data.get('tags')  # Выбранный тег из списка
+        new_tag = data.get('newTag')  # Новый тег, введенный пользователем
 
         if not all([task_content, priority, description, customer, department, assigned_to_id]):
             return jsonify({"error": "Не все обязательные поля заполнены"}), 400
@@ -952,15 +958,20 @@ def create_task():
         gmt_plus_5 = pytz.timezone('Etc/GMT-5')
         created_at = datetime.now(gmt_plus_5)
 
+        # Определяем, какой тег использовать в новой задаче
+        tag_to_use = selected_tag if selected_tag else new_tag
+
+        # Создаем новую задачу с указанием тэга
         new_task = Task(
             task_id=unique_id,
             content=task_content_with_id,
             priority=priority,
             description=task_description,
             project_id=2322606786,
-            status=1,  # Default to "В очереди"
+            status=1,  # По умолчанию "В очереди"
             created_at=created_at,
-            assigned_to=assigned_to_id
+            assigned_to=assigned_to_id,
+            tags=tag_to_use  # Передаем значение тэга в объект Task
         )
         db.session.add(new_task)
         db.session.commit()
@@ -972,6 +983,7 @@ def create_task():
     except Exception as error:
         print("Error creating task:", error)
         return jsonify({"error": str(error)}), 500
+
 
 @app.route('/test')
 def calendar():

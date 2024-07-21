@@ -114,6 +114,18 @@
                         <option value="">Не выбран</option>
                     </select>
                 </div>
+                    <div class="form-group">
+                        <label for="tags">Тэг</label>
+                        <select class="form-control bg-dark text-light" id="tags" name="tags">
+                            <option value="">Создать новый тэг</option>
+                            {% for tag in existing_tags %}
+                                <option value="{{ tag }}">{{ tag }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                <div class="form-group">
+                    <input type="text" class="form-control bg-dark text-light" id="newTag" name="newTag">
+                </div>
                 <button type="submit" class="btn btn-primary">Создать задачу</button>
             </form>
         </div>
@@ -129,6 +141,7 @@
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
+                    <p>Тэги: {{ task.tags }}</p>
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.id }}">Редактировать</button>
@@ -197,6 +210,7 @@
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
+                    <p>Тэги: {{ task.tags }}</p>
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.id }}">Редактировать</button>
@@ -264,6 +278,7 @@
                     {% if task.duration %}
                     <p>Время, затраченное на задачу: {{ task.format_duration(task.duration) }}</p>
                     {% endif %}
+                    <p>Тэги: {{ task.tags }}</p>
                     <button class="btn btn-sm btn-primary start-task-btn" data-task-id="{{ task.id }}">Начать задачу</button></br>
                     <button class="btn btn-sm btn-primary end-task-btn" data-task-id="{{ task.id }}">Завершить задачу</button></br>
                     <button class="btn btn-sm btn-primary open-update-form" data-task-id="{{ task.id }}">Редактировать</button>
@@ -628,6 +643,26 @@
 
 </script>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Обработчик изменения выбора в select
+    $('#tags').change(function() {
+        // Получаем выбранное значение
+        var selectedTag = $(this).val();
+
+        // Показываем или скрываем поле ввода в зависимости от выбранной опции
+        if (selectedTag === '') {
+            $('#newTag').show();  // Показываем поле ввода
+        } else {
+            $('#newTag').hide();  // Скрываем поле ввода
+        }
+    });
+});
+</script>
+
+
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Function to fetch users and populate dropdowns
@@ -701,6 +736,8 @@
                 const customer = document.getElementById('customer').value;
                 const department = document.getElementById('department').value;
                 const assignedTo = document.getElementById('assigned_to').value;
+                let tagValue = document.getElementById('tags').value;
+                let newTagValue = document.getElementById('newTag').value;
 
                 fetch('/create_task', {
                     method: 'POST',
@@ -713,7 +750,9 @@
                         description: description,
                         customer: customer,
                         department: department,
-                        assigned_to: assignedTo
+                        assigned_to: assignedTo,
+                        tags: tagValue,
+                        newTag: newTagValue
                     })
                 }).then(response => response.json())
                     .then(data => {
