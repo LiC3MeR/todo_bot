@@ -114,17 +114,22 @@
                         <option value="">Не выбран</option>
                     </select>
                 </div>
-                    <div class="form-group">
-                        <label for="tags">Тэг</label>
-                        <select class="form-control bg-dark text-light" id="tags" name="tags">
-                            <option value="">Создать новый тэг</option>
-                            {% for tag in existing_tags %}
-                                <option value="{{ tag }}">{{ tag }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
                 <div class="form-group">
-                    <input type="text" class="form-control bg-dark text-light" id="newTag" name="newTag">
+                    <label>Тэги</label><br>
+                    {% for tag in existing_tags %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="tag{{ loop.index }}" name="tags" value="{{ tag }}">
+                            <label class="form-check-label" for="tag{{ loop.index }}">{{ tag }}</label>
+                        </div>
+                    {% endfor %}
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="newTagCheckbox" name="newTagCheckbox">
+                    <label class="form-check-label" for="newTagCheckbox">Создать новый тэг</label>
+                </div>
+                </div>
+                <div class="form-group" id="newTagInput" style="display: none;">
+                    <label for="newTagInput">Новый тэг</label>
+                    <input type="text" class="form-control bg-dark text-light" id="newTagInputField" name="newTagInput">
                 </div>
                 <button type="submit" class="btn btn-primary">Создать задачу</button>
             </form>
@@ -643,25 +648,21 @@
 
 </script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    // Обработчик изменения выбора в select
-    $('#tags').change(function() {
-        // Получаем выбранное значение
-        var selectedTag = $(this).val();
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработчик для чекбокса "Создать новый тэг"
+    const createNewTagCheckbox = document.getElementById('newTagCheckbox');
+    const newTagInput = document.getElementById('newTagInput');
 
-        // Показываем или скрываем поле ввода в зависимости от выбранной опции
-        if (selectedTag === '') {
-            $('#newTag').show();  // Показываем поле ввода
+    createNewTagCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            newTagInput.style.display = 'block';
         } else {
-            $('#newTag').hide();  // Скрываем поле ввода
+            newTagInput.style.display = 'none';
         }
     });
 });
 </script>
-
-
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -730,14 +731,19 @@ $(document).ready(function() {
             document.getElementById('taskForm').addEventListener('submit', function(event) {
                 event.preventDefault();
 
-                const taskContent = document.getElementById('task_content').value;
-                const priority = document.getElementById('priority').value;
-                const description = document.getElementById('description').value;
-                const customer = document.getElementById('customer').value;
-                const department = document.getElementById('department').value;
-                const assignedTo = document.getElementById('assigned_to').value;
-                let tagValue = document.getElementById('tags').value;
-                let newTagValue = document.getElementById('newTag').value;
+            const taskContent = document.getElementById('task_content').value;
+            const priority = document.getElementById('priority').value;
+            const description = document.getElementById('description').value;
+            const customer = document.getElementById('customer').value;
+            const department = document.getElementById('department').value;
+            const assignedTo = document.getElementById('assigned_to').value;
+
+            // Получение значений выбранных тегов
+            let tags = document.querySelectorAll('input[name="tags"]:checked');
+            let tagValues = Array.from(tags).map(tag => tag.value);
+
+            // Получение значения нового тега (если выбрано создать новый тег)
+            let newTagValue = document.getElementById('newTagInputField').value;
 
                 fetch('/create_task', {
                     method: 'POST',
@@ -751,7 +757,7 @@ $(document).ready(function() {
                         customer: customer,
                         department: department,
                         assigned_to: assignedTo,
-                        tags: tagValue,
+                        tags: tagValues,
                         newTag: newTagValue
                     })
                 }).then(response => response.json())

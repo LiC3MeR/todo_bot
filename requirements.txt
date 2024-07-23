@@ -15,5 +15,4 @@ flask_login
 flask_principal
 apscheduler
 pymysql
-mimetypes
 python-dotenv

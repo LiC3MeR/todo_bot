@@ -26,6 +26,7 @@ import logging
 import mimetypes
 from dotenv import load_dotenv
 import calendar as cal
+import json
 
 load_dotenv()
 
@@ -311,9 +312,6 @@ class User(db.Model, UserMixin):
     # В функции can в модели User
     def can(self, permission_name):
         permission = Permission.query.filter_by(name=permission_name).first()
-        if permission:
-            print(
-                f"Checking permission '{permission_name}' for user '{self.username}': {permission in self.role.permissions}")
         return permission is not None and permission in self.role.permissions
 
     def display_name(self):
@@ -955,6 +953,7 @@ def create_task():
         unique_id = generate_unique_id(department)
         task_content_with_id = f"{unique_id}: {task_content}"
 
+
         gmt_plus_5 = pytz.timezone('Etc/GMT-5')
         created_at = datetime.now(gmt_plus_5)
 
@@ -971,7 +970,7 @@ def create_task():
             status=1,  # По умолчанию "В очереди"
             created_at=created_at,
             assigned_to=assigned_to_id,
-            tags=tag_to_use  # Передаем значение тэга в объект Task
+            tags=','.join(tag_to_use) if isinstance(tag_to_use, list) else tag_to_use
         )
         db.session.add(new_task)
         db.session.commit()
