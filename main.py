@@ -471,7 +471,6 @@ def get_contribution_data(user_tasks):
     return sorted(contribution_data.items())
 
 @app.route('/user')
-@require_telegram_link
 @permission_required('Возможность просмотреть профиль пользователя')
 def user_list():
     users = User.query.all()
