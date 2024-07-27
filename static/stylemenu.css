@@ -371,6 +371,10 @@ select {
             background-color: lightgreen;
         }
 
+.task-form h4{
+    text-align: center
+}
+
 .tooltip {
     position: absolute;
     background-color: #ffffff;

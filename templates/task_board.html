@@ -135,6 +135,27 @@
             </form>
         </div>
 
+<form method="GET" action="{{ url_for('task_board') }}">
+    <label for="tag">Тег:</label>
+    <select class="form-control bg-dark text-light" name="tag" id="tag">
+        <option value="">Все</option>
+        {% for tag in existing_tags %}
+            <option value="{{ tag }}" {% if selected_tag == tag %}selected{% endif %}>{{ tag }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="user">Пользователь:</label>
+    <select class="form-control bg-dark text-light" name="user" id="user">
+        <option value="">Все</option>
+        {% for user in users_list %}
+            <option value="{{ user }}" {% if selected_user == user %}selected{% endif %}>{{ user }}</option>
+        {% endfor %}
+    </select>
+
+    <button class="btn btn-primary" type="submit">Фильтровать</button>
+</form>
+
+
         <div class="task-board">
             <div class="column" id="queue">
                 <h3 class="text-center text-light">В очереди</h3>

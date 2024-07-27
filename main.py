@@ -695,7 +695,7 @@ def get_tasks():
                 "status": task_status,
                 "created_at": created_at,
                 "assigned_to": assigned_user_name,
-                "tag": tags
+                "tag": tags or []
             })
 
         return jsonify({"tasks": task_list})
@@ -762,12 +762,33 @@ def add_comment(task_id):
             return jsonify({"error": str(e)}), 500
     return jsonify({"error": "Контент не может быть пустым"}), 400
 
-@app.route('/task_board')
+@app.route('/task_board', methods=['GET', 'POST'])
 @login_required
 @permission_required('Доска задач')
 def task_board():
     try:
-        tasks = Task.query.all()
+        # Получаем параметры фильтрации из запроса
+        filter_status = request.args.get('status')  # Пример: 'В очереди', 'В работе', 'Готово'
+        filter_tag = request.args.get('tag')        # Пример: 'Баг', 'Улучшение'
+        filter_user = request.args.get('user')      # Пример: 'usernick1', 'usernick2'
+
+        # Получаем все задачи из базы данных
+        query = Task.query
+
+        # Применяем фильтр по статусу, если он задан
+        if filter_status in ['В очереди', 'В работе', 'Готово']:
+            status_id = next(key for key, value in section_status_mapping.items() if value == filter_status)
+            query = query.filter_by(status=status_id)
+
+        # Применяем фильтр по тегу, если он задан
+        if filter_tag:
+            query = query.filter(Task.tags.contains(filter_tag))
+
+        # Применяем фильтр по пользователю, если он задан
+        if filter_user:
+            query = query.join(User).filter(User.usernick == filter_user)
+
+        tasks = query.all()
 
         section_status_mapping = {
             1: 'В очереди',
@@ -788,11 +809,28 @@ def task_board():
         image_filename = current_user.image_file if current_user.image_file else ''
         existing_tags = db.session.query(Task.tags.distinct()).all()
         tags_list = [tag[0] for tag in existing_tags if tag[0]]  # Фильтруем пустые значения, если они есть
-        return render_template('task_board.html', tasks_by_section=tasks_by_section, user=current_user, image_filename=image_filename, task_id=Task.id, existing_tags=tags_list)
+
+        # Получаем список пользователей для фильтра
+        users_list = db.session.query(User.usernick.distinct()).all()
+        users_list = [user[0] for user in users_list if user[0]]
+
+        return render_template(
+            'task_board.html',
+            tasks_by_section=tasks_by_section,
+            user=current_user,
+            image_filename=image_filename,
+            task_id=Task.id,
+            existing_tags=tags_list,
+            selected_status=filter_status,
+            selected_tag=filter_tag,
+            selected_user=filter_user,
+            users_list=users_list
+        )
 
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
+
 
 
 @app.route('/manage_roles', methods=['GET', 'POST'])
