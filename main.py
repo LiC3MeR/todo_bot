@@ -569,7 +569,7 @@ def login():
             login_user(user)  # Вход пользователя
 
             # Проверка двухфакторной аутентификации
-            if user.can('no_2fa_access'):
+            if user.can('Отключение двухэтапной аутентификации'):
                 return redirect(url_for('task_board'))
 
             if user.telegram_id:
