@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, redirect, abort
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, redirect, abort, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -15,7 +15,8 @@ from datetime import datetime, timedelta
 import pytz
 import sys
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, DateTime, LargeBinary, func
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, DateTime, LargeBinary, func, String
 from functools import wraps
 from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity
 from jinja2 import TemplateNotFound
@@ -27,6 +28,9 @@ import mimetypes
 from dotenv import load_dotenv
 import calendar as cal
 import json
+import random
+import string
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -67,6 +71,33 @@ roles_permissions = db.Table('roles_permissions',
     db.Column('permission_id', db.Integer, db.ForeignKey('permission.id'), primary_key=True)
 )
 
+class VerificationCode(db.Model):
+    __tablename__ = 'verification_code'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    code = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    def __repr__(self):
+        return f'<VerificationCode {self.code}>'
+
+
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+def cleanup_expired_codes():
+    try:
+        now = datetime.now()
+        expired_codes = VerificationCode.query.filter(VerificationCode.expires_at < now).all()
+        for code in expired_codes:
+            db.session.delete(code)
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Error cleaning up expired verification codes: {e}")
+
+# Запускаем очистку каждые 24 часа
+scheduler.add_job(cleanup_expired_codes, 'interval', seconds=10)
+
 class TaskAdmin(ModelView):
     column_list = ('content', 'description', 'priority', 'project_id', 'status', 'assignee')
 
@@ -106,6 +137,28 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 bot = TeleBot(TELEGRAM_BOT_TOKEN)
 
 
+def generate_verification_code(length=6):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
+
+
+def send_verification_code(user):
+    code = generate_verification_code()
+    expires_at = datetime.now() + timedelta(minutes=10)
+
+    verification = VerificationCode(user_id=user.id, code=code, expires_at=expires_at)
+    db.session.add(verification)
+    db.session.commit()
+
+    # Логируем для отладки
+    print(f"Sent verification code '{code}' to user ID {user.id}")
+
+    # Отправляем код пользователю через Telegram API
+    try:
+        bot.send_message(user.telegram_id, f"Your verification code is {code}. It expires in 10 minutes.")
+    except Exception as e:
+        print(f"Error sending verification code: {e}")
+
 def role_required(role_id_required):
     def decorator(view_function):
         @wraps(view_function)
@@ -132,7 +185,7 @@ def role_required(role_id_required):
 
 role_id = int(os.getenv('ROLE_ID'))
 
-def permission_required(permission_name):
+def permission_required(permission_name, role_id=None):
     def decorator(func):
         @wraps(func)
         def decorated_function(*args, **kwargs):
@@ -140,12 +193,17 @@ def permission_required(permission_name):
                 return login_manager.unauthorized()
 
             # Проверяем, есть ли у пользователя разрешение
-            if not current_user.can(permission_name) and current_user.role_id != role_id:
-                abort(403)  # 403 Forbidden
+            if role_id is not None:
+                if not (current_user.can(permission_name) or current_user.role_id == role_id):
+                    abort(403)  # 403 Forbidden
+            else:
+                if not current_user.can(permission_name):
+                    abort(403)  # 403 Forbidden
 
             return func(*args, **kwargs)
         return decorated_function
     return decorator
+
 
 
 @app.context_processor
@@ -257,33 +315,6 @@ class Task(db.Model):
     def load_user(cls, user_id):
         return db.session.query(User).get(int(user_id))
 
-    @staticmethod
-    def send_notification(task_id):
-        with app.app_context():
-            task = Task.query.get(task_id)
-            if task:
-                try:
-                    message = f"Напоминание: Задача {task.task_id} начинается сейчас!"
-                    send_telegram_message(message)
-                    app.logger.info(f"Уведомление отправлено для задачи {task_id} в {datetime.now()}")
-                except Exception as e:
-                    app.logger.error(f"Ошибка отправки уведомления для задачи {task_id}: {e}")
-
-    @staticmethod
-    def notify_upcoming_tasks():
-        with app.app_context():
-            try:
-                tasks = Task.query.filter(Task.start_time != None).all()
-                for task in tasks:
-                    if task.time_to_start():
-                        notification_time = task.start_time - timedelta(minutes=15)
-                        scheduler.add_job(Task.send_notification, trigger='date', run_date=notification_time, args=[task.id])
-            except Exception as e:
-                app.logger.error(f"Error scheduling notifications: {e}")
-
-# Здесь добавляем задание для уведомлений
-scheduler.add_job(Task.notify_upcoming_tasks, 'interval', minutes=1)
-
 def __init__(self, usernick, username, password, role='user'):
     self.usernick = usernick
     self.username = username
@@ -299,6 +330,8 @@ class User(db.Model, UserMixin):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     avatar_data = db.Column(db.LargeBinary)
     image_file = db.Column(db.String(255), nullable=False, default='logo.jpg')
+    telegram_id = db.Column(db.String(80), unique=True)
+    is_verified = db.Column(db.Boolean, default=False)
 
     # Define relationship with Role
     role = db.relationship('Role', backref=db.backref('users', lazy=True))
@@ -332,10 +365,6 @@ class User(db.Model, UserMixin):
             'display_name': self.display_name()  # Include the display name in the dictionary
         }
 
-def init_db():
-    with app.app_context():
-        db.create_all()
-
 # Функция для генерации уникального идентификатора задачи
 def generate_unique_id(department):
     try:
@@ -362,6 +391,37 @@ def generate_unique_id(department):
     except Exception as e:
         print("Error generating unique ID:", e)
         return "OTH-1"
+
+def require_telegram_link(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.is_authenticated and not current_user.telegram_id:
+            return redirect(url_for('link_telegram'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/link_telegram', methods=['GET', 'POST'])
+@login_required
+def link_telegram():
+    if request.method == 'POST':
+        telegram_id = request.form.get('telegram_id')
+
+        if not telegram_id:
+            flash('Telegram ID is required', 'error')
+            return redirect(url_for('link_telegram'))
+
+        user = current_user
+        user.telegram_id = telegram_id
+        db.session.commit()
+        flash('Telegram ID successfully linked', 'success')
+        return redirect(url_for('task_board'))
+
+    return '''
+        <form method="post">
+            Telegram ID: <input type="text" name="telegram_id" required><br>
+            <input type="submit" value="Link">
+        </form>
+    '''
 
 
 @app.route('/task/<int:task_id>/comments', methods=['GET', 'POST'])
@@ -411,6 +471,7 @@ def get_contribution_data(user_tasks):
     return sorted(contribution_data.items())
 
 @app.route('/user')
+@require_telegram_link
 @permission_required('Возможность просмотреть профиль пользователя')
 def user_list():
     users = User.query.all()
@@ -496,18 +557,68 @@ def create_user():
         flash('Пользователь успешно создан', 'success')
         return redirect(url_for('users'))
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
+
         if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect('/after_login')
+            login_user(user)  # Вход пользователя
+
+            # Проверка двухфакторной аутентификации
+            if user.can('no_2fa_access'):
+                return redirect(url_for('task_board'))
+
+            if user.telegram_id:
+                send_verification_code(user)  # Отправка кода подтверждения
+                session['pending_user_id'] = user.id
+                return redirect(url_for('verify_telegram_code'))
+            else:
+                return redirect(url_for('link_telegram'))  # Перенаправление на привязку Telegram
+
         else:
             flash('Неправильное имя пользователя или пароль', 'error')
+
     return render_template('login.html')
+
+
+
+def verify_code(user_id, code):
+    verification = VerificationCode.query.filter_by(user_id=user_id, code=code).first()
+
+    if verification and verification.expires_at > datetime.now():
+        db.session.delete(verification)
+        db.session.commit()
+        print(f"Code '{code}' verified successfully for user ID {user_id}")
+        return True
+    else:
+        print(f"Code '{code}' verification failed for user ID {user_id}")
+        return False
+
+
+@app.route('/verify_telegram_code', methods=['GET', 'POST'])
+def verify_telegram_code():
+    if request.method == 'POST':
+        code = request.form['code']
+        user_id = session.get('pending_user_id')
+
+        if not user_id:
+            flash('No pending user ID in session', 'error')
+            return redirect(url_for('login'))
+
+        user = User.query.get(user_id)
+        if user and verify_code(user_id, code):  # Используйте user_id
+            session.pop('pending_user_id', None)
+            login_user(user)
+            return redirect(url_for('task_board'))
+        else:
+            flash('Invalid verification code', 'error')
+
+    return render_template('verify_telegram_code.html')
+
 
 @app.route('/after_login', methods=['GET', 'POST'])
 def after_login():
