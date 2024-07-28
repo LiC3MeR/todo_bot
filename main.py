@@ -416,12 +416,7 @@ def link_telegram():
         flash('Telegram ID successfully linked', 'success')
         return redirect(url_for('task_board'))
 
-    return '''
-        <form method="post">
-            Telegram ID: <input type="text" name="telegram_id" required><br>
-            <input type="submit" value="Link">
-        </form>
-    '''
+    return render_template('link_telegram.html')
 
 
 @app.route('/task/<int:task_id>/comments', methods=['GET', 'POST'])

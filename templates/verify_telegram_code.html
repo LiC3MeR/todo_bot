@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
     <title>Verify Telegram Code</title>
 </head>
 <body>
-    <h1>Verify Your Telegram Code</h1>
     <form method="POST">
-        <label for="code">Verification Code:</label>
+        <label for="code">Код подтверждения:</label>
         <input type="text" id="code" name="code" required>
-        <button type="submit">Verify</button>
+        <button class="btn btn-secondary close-update-form" type="submit">Подтвердить</button>
     </form>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Link Telegram Account</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
 </head>
 <body>
     <form method="post">
-        <label for="telegram_id">Telegram ID:</label>
-        <input type="text" id="telegram_id" name="telegram_id" required>
-        <button type="submit">Link Telegram Account</button>
+        <label for="telegram_id">Telegram Chat ID:</label>
+        <input type="text" id="telegram_id" name="telegram_id" required></br></br>
+        <button class="btn btn-secondary close-update-form" type="submit">Подключить телеграм аккаунт</button>
     </form>
 </body>
 </html>

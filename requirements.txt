@@ -7,6 +7,9 @@ flask_bcrypt
 flask_admin
 werkzeug
 flask_login
+flask_principal
+pymysql
+cryptography
 pytz
 flask_bcrypt
 flask_admin
