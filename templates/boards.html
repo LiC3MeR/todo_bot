@@ -1,43 +1,28 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Удаление задач</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
     <style>
-        .flash-messages {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        z-index: 1000;
-        width: 300px;
-        background-color: #f0f0f0;
-        border: 1px solid #ccc;
-        padding: 10px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .flash-message {
-            margin-bottom: 10px;
+        input {
+            width: 100%;
             padding: 10px;
-            background-color: #fff;
+            margin-bottom: 10px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: gray;
+            color: white;
+            text-align: center;
         }
 
-        .flash-messages.dark-mode {
-            background-color: #333;
-            color: #fff;
-            border: 1px solid #666;
-        }
-
-        .flash-messages.dark-mode .flash-message {
-            background-color: #444;
-            border: 1px solid #666;
-            color: #fff;
+        h1 {
+            text-align: center;
         }
     </style>
+
 </head>
+<body>
     <header>
         <div class="logo">
             <img src="/static/logo.jpg" alt="Логотип">
@@ -50,7 +35,7 @@
                 <button id="logout-button">Выйти</button>
             </div>
         </div>
-    </header></br>
+    </header>
     <nav class="menu">
         <div class="menu-toggle">☰</div>
         <ul>
@@ -85,38 +70,13 @@
             {% endif %}
         </ul>
     </nav>
-    <div class="content">
-        {% block content %}{% endblock %}
-    </div>
-<body>
-<style>
-    .deltask {
-        color: white;
-        text-align: center;
-        margin-bottom: 20px;
-        margin-top: -20px;
-    }
-</style>
-    <h1 class="deltask">Удалить задачи</h1>
-    <form id="deleteForm">
-        {% for task in tasks %}
-            <div>
-                <input type="checkbox" name="task_ids[]" value="{{ task.task_id }}"> {{ task.content }}
-            </div>
-        {% endfor %}
-        <button type="button" onclick="deleteSelectedTasks()">Удалить задачи</button>
+    <h1>Мои доски задач</h1>
+
+    <form action="{{ url_for('boards') }}" method="post">
+        <label for="board_name">Название новой доски:</label>
+        <input type="text" id="board_name" name="board_name" required>
+        <button type="submit">Создать</button>
     </form>
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="flash-messages dark-mode">
-                {% for message in messages %}
-                    <div class="flash-message">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
     <script>
             const userAvatar = document.getElementById('user-avatar');
             const userMenu = document.getElementById('user-menu');
@@ -146,7 +106,6 @@
             profileButton.addEventListener('click', function() {
                 window.location.href = '{{ url_for("profile") }}';
             });
-
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -163,68 +122,5 @@
             }
         });
     </script>
-
-    <script>
-        // Определение функции showNotification
-    function showNotification(message) {
-        // Создание элемента уведомления
-        const notification = document.createElement('div');
-        notification.classList.add('notification'); // Применение стилей уведомления
-        notification.textContent = message; // Установка текста уведомления
-
-        // Добавление уведомления на страницу
-        document.body.appendChild(notification);
-
-        // Удаление уведомления через 3 секунды
-        setTimeout(function() {
-            notification.remove();
-        }, 3000); // Удалить уведомление через 3 секунды (можно изменить время)
-    }
-    </script>
-
-    <script>
-    function deleteSelectedTasks() {
-        const form = document.getElementById('deleteForm');
-        const formData = new FormData(form);
-        fetch('/delete_tasks', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok.');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log(data); // Проверяем данные от сервера
-            showNotification(data.message); // Показываем уведомление
-
-            // Добавляем задержку перед обновлением страницы
-            setTimeout(function() {
-                console.log('Reloading page...');
-                location.reload(); // Обновляем страницу
-            }); // 1 секунда задержки (можно увеличить, если необходимо)
-        })
-        .catch(error => console.error('Error:', error));
-    }
-    </script>
-
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var flashMessagesContainer = document.querySelector('.flash-messages.dark-mode');
-            if (flashMessagesContainer) {
-                setTimeout(function() {
-                    flashMessagesContainer.style.transition = 'opacity 0.3s ease'; // Добавляем анимацию исчезновения
-                    flashMessagesContainer.style.opacity = '0'; // Устанавливаем непрозрачность на 0
-                    setTimeout(function() {
-                        flashMessagesContainer.parentNode.removeChild(flashMessagesContainer); // Удаляем элемент из DOM
-                    }, 300); // Даем 0.3 секунды на полное исчезновение анимации (если есть)
-                }, 3000); // Закрываем уведомление через 5 секунд (5000 миллисекунд)
-            }
-        });
-    </script>
-
 </body>
 </html>

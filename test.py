@@ -85,6 +85,20 @@ class VerificationCode(db.Model):
     code = db.Column(db.String(6), nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
 
+class Board(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    creator = db.relationship('User', backref=db.backref('created_boards', lazy=True))
+
+    users = db.relationship('User', secondary='boards_users', backref=db.backref('boards', lazy=True))
+
+class BoardUser(db.Model):
+    __tablename__ = 'boards_users'
+    board_id = db.Column(db.Integer, db.ForeignKey('board.id'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

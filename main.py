@@ -265,8 +265,11 @@ class Task(db.Model):
     duration = db.Column(db.Integer)
     tags = db.Column(db.String(30), nullable=True)
     sprint_id = db.Column(db.Integer, db.ForeignKey('sprints.id'), nullable=True)
+    board_id = db.Column(db.Integer, db.ForeignKey('board.id'))  # Добавьте это поле
 
     comments = db.relationship('Comment', backref='task_related', lazy=True)
+    board = db.relationship('Board', backref='tasks')
+
 
     def start_task(self):
         self.start_time = datetime.now()
@@ -333,6 +336,20 @@ class Sprint(db.Model):
         self.name = name
         self.start_date = start_date
         self.end_date = end_date
+
+
+class Board(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    creator = db.relationship('User', backref=db.backref('created_boards', lazy=True))
+
+    users = db.relationship('User', secondary='boards_users', backref=db.backref('boards', lazy=True))
+
+class BoardUser(db.Model):
+    __tablename__ = 'boards_users'
+    board_id = db.Column(db.Integer, db.ForeignKey('board.id'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
 
 
 def __init__(self, usernick, username, password, role='user'):
@@ -489,8 +506,9 @@ def get_contribution_data(user_tasks):
 @permission_required('Возможность просмотреть профиль пользователя')
 def user_list():
     users = User.query.all()
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
     image_filename = current_user.image_file if current_user.image_file else ''
-    return render_template('user_list.html', users=users, image_filename=image_filename)
+    return render_template('user_list.html', users=users, image_filename=image_filename, boards=boards)
 
 @app.route('/user/<int:user_id>')
 @permission_required('Возможность просмотреть профиль пользователя')
@@ -498,6 +516,7 @@ def user_profile(user_id):
     user = User.query.get_or_404(user_id)
     user_tasks = user.tasks  # Предполагаем, что у пользователя есть задачи, которые хранятся в user.tasks
     contribution_months = get_contribution_data(user_tasks)
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
 
     current_date = datetime.now()
     first_day_of_month = current_date.replace(day=1)
@@ -510,7 +529,8 @@ def user_profile(user_id):
                            current_date=current_date,
                            first_day_of_month=first_day_of_month,
                            last_day_of_month=last_day_of_month,
-                           image_filename=image_filename)
+                           image_filename=image_filename,
+                           boards=boards)
 
 @app.route('/update_task/<id>', methods=['POST'])
 def update_task(id):
@@ -543,8 +563,9 @@ def update_task(id):
 @login_required
 @permission_required('Меню')
 def menu():
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
     image_filename = current_user.image_file if current_user.image_file else ''
-    return render_template('menu.html', user=current_user, image_filename=image_filename)
+    return render_template('menu.html', user=current_user, image_filename=image_filename, boards=boards)
 
 @app.route('/register')
 def reg():
@@ -670,6 +691,7 @@ def phpmyadmin():
 @login_required
 @permission_required('Главная')
 def index():
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
     if request.method == 'POST':
         task_content = request.form['task_content']
         priority = int(request.form['priority'])
@@ -708,7 +730,7 @@ def index():
             # Обработка GET запроса (получение данных)
             tasks = Task.query.all()
             image_filename = current_user.image_file if current_user.image_file else ''
-            return render_template('index.html', tasks=tasks, user=current_user, image_filename=image_filename)
+            return render_template('index.html', tasks=tasks, user=current_user, image_filename=image_filename, boards=boards)
         except Exception as error:
             print("Error fetching tasks:", error)
             return jsonify({"error": str(error)})
@@ -891,6 +913,7 @@ def add_comment(task_id):
 @permission_required('Создать спринт')
 def create_sprint():
     image_filename = current_user.image_file if current_user.image_file else ''
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -899,14 +922,14 @@ def create_sprint():
 
         if not all([name, start_date, end_date]):
             flash('Пожалуйста, заполните все поля', 'danger')
-            return render_template('create_sprint.html', user=current_user, image_filename=image_filename)
+            return render_template('create_sprint.html', user=current_user, image_filename=image_filename, boards=boards)
 
         try:
             start_date = datetime.strptime(start_date, '%Y-%m-%d')
             end_date = datetime.strptime(end_date, '%Y-%m-%d')
         except ValueError:
             flash('Некорректный формат даты', 'danger')
-            return render_template('create_sprint.html', user=current_user, image_filename=image_filename)
+            return render_template('create_sprint.html', user=current_user, image_filename=image_filename, boards=boards)
 
         sprint = Sprint(name=name, start_date=start_date, end_date=end_date)
         db.session.add(sprint)
@@ -915,7 +938,7 @@ def create_sprint():
         flash('Спринт успешно создан!', 'success')
         return redirect(url_for('list_sprints'))
 
-    return render_template('create_sprint.html', user=current_user, image_filename=image_filename)
+    return render_template('create_sprint.html', user=current_user, image_filename=image_filename, boards=boards)
 
 
 @app.route('/sprints')
@@ -924,7 +947,8 @@ def create_sprint():
 def list_sprints():
     image_filename = current_user.image_file if current_user.image_file else ''
     sprints = Sprint.query.all()
-    return render_template('list_sprints.html', sprints=sprints, user=current_user, image_filename=image_filename)
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
+    return render_template('list_sprints.html', sprints=sprints, user=current_user, image_filename=image_filename, boards=boards)
 
 @app.route('/sprint/<int:sprint_id>', methods=['GET', 'POST'])
 @login_required
@@ -932,6 +956,7 @@ def list_sprints():
 def view_sprint(sprint_id):
     image_filename = current_user.image_file if current_user.image_file else ''
     sprint = Sprint.query.get_or_404(sprint_id)
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
 
     if request.method == 'POST':
         sprint.name = request.form.get('name')
@@ -942,40 +967,99 @@ def view_sprint(sprint_id):
         flash('Спринт успешно обновлен!', 'success')
         return redirect(url_for('list_sprints'))
 
-    return render_template('view_sprint.html', sprint=sprint, user=current_user, image_filename=image_filename)
+    return render_template('view_sprint.html', sprint=sprint, user=current_user, image_filename=image_filename, boards=boards)
 
 
 def get_current_sprint():
     now = datetime.now()
     return Sprint.query.filter(Sprint.start_date <= now, Sprint.end_date >= now).first()
 
-@app.route('/task_board', methods=['GET', 'POST'])
+@app.route('/boards', methods=['GET', 'POST'])
+@permission_required('Доска задач')
+@login_required
+def boards():
+    image_filename = current_user.image_file if current_user.image_file else ''
+
+    if request.method == 'POST':
+        board_name = request.form.get('board_name')
+        if board_name:
+            # Создание новой доски
+            new_board = Board(name=board_name, creator_id=current_user.id)
+            db.session.add(new_board)
+            db.session.flush()  # Получаем ID новой доски
+
+            # Связываем пользователя с новой доской
+            board_user_relation = BoardUser(board_id=new_board.id, user_id=current_user.id)
+            db.session.add(board_user_relation)
+            db.session.commit()
+
+            flash('Доска успешно создана', 'success')
+            return redirect(url_for('boards'))
+
+    # Получение досок, связанных с текущим пользователем
+    user_boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
+    return render_template('boards.html', boards=user_boards, user=current_user, image_filename=image_filename)
+
+
+@app.route('/user_suggestions', methods=['GET'])
+@login_required
+def user_suggestions():
+    term = request.args.get('term', '')
+    users = User.query.filter(User.usernick.ilike(f'%{term}%')).all()
+    suggestions = [{'label': user.usernick, 'value': user.usernick} for user in users]
+    return jsonify(suggestions)
+
+
+@app.route('/invite_user/<int:board_id>', methods=['POST'])
+@login_required
+def invite_user(board_id):
+    board = Board.query.get_or_404(board_id)
+
+    # Проверка, является ли текущий пользователь создателем доски
+    if current_user.id != board.creator_id:
+        flash("У вас нет прав для выполнения этого действия.", "error")
+        return redirect(url_for('task_board', board_id=board_id))
+
+    usernick = request.form.get('usernick')
+    user = User.query.filter_by(usernick=usernick).first()
+    if user:
+        if user in board.users:
+            flash("Пользователь уже добавлен в доску.", "warning")
+        else:
+            board.users.append(user)
+            db.session.commit()
+            flash("Пользователь успешно добавлен.", "success")
+    else:
+        flash("Пользователь не найден.", "error")
+
+    return redirect(url_for('task_board', board_id=board_id))
+
+@app.route('/admin/boards')
+@login_required
+@permission_required('root')
+def admin_boards():
+    image_filename = current_user.image_file if current_user.image_file else ''
+    all_boards = Board.query.all()
+    return render_template('admin_boards.html', boards=all_boards, image_filename=image_filename, user=current_user)
+
+@app.route('/task_board/<int:board_id>', methods=['GET', 'POST'])
 @login_required
 @permission_required('Доска задач')
-def task_board():
+def task_board(board_id):
+    board = Board.query.get_or_404(board_id)
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
+
+    # Проверка, имеет ли текущий пользователь доступ к этой доске
+    if not (current_user.id == board.creator_id or BoardUser.query.filter_by(board_id=board_id, user_id=current_user.id).first()):
+        return abort(403)
+
     try:
         filter_status = request.args.get('status')
         filter_tag = request.args.get('tag')
         filter_user = request.args.get('user')
 
-        current_sprint = Sprint.query.filter(Sprint.start_date <= datetime.now(), Sprint.end_date >= datetime.now()).first()
-
-        if not current_sprint:
-            return render_template(
-                'task_board.html',
-                tasks_by_section={},
-                user=current_user,
-                image_filename=current_user.image_file if current_user.image_file else '',
-                task_id=None,
-                existing_tags=[],
-                selected_status=filter_status,
-                selected_tag=filter_tag,
-                selected_user=filter_user,
-                users_list=[],
-                sprints=[]
-            )
-
-        query = Task.query.filter_by(sprint_id=current_sprint.id)
+        # Фильтрация задач по доске
+        query = Task.query.filter_by(board_id=board_id)
 
         section_status_mapping = {
             1: 'В очереди',
@@ -1025,7 +1109,10 @@ def task_board():
             selected_tag=filter_tag,
             selected_user=filter_user,
             users_list=users_list,
-            sprints=sprints
+            sprints=sprints,
+            board_id=board_id,
+            boards = boards,
+            board = board
         )
     except Exception as error:
         print("Error fetching tasks:", error)
@@ -1052,6 +1139,7 @@ def manage_roles():
 @login_required
 @permission_required('Роли')
 def role_management():
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
     if request.method == 'POST':
         if 'role_name' in request.form:
             # Handle role creation
@@ -1092,7 +1180,7 @@ def role_management():
     permissions = Permission.query.all()
     roles = Role.query.all()
     image_filename = current_user.image_file if current_user.image_file else ''
-    return render_template('create_role.html', permissions=permissions, roles=roles, image_filename=image_filename)
+    return render_template('create_role.html', permissions=permissions, roles=roles, image_filename=image_filename, boards=boards)
 
 @app.route('/get_role_permissions/<int:role_id>', methods=['GET'])
 @login_required
@@ -1172,6 +1260,7 @@ def create_task():
         selected_tag = data.get('tags')  # Выбранный тег из списка
         new_tag = data.get('newTag')  # Новый тег, введенный пользователем
         sprint_id = data.get('sprint')
+        board_id = data.get('board_id')  # ID доски
 
         if not all([task_content, priority, description, customer, department, assigned_to_id, sprint_id]):
             return jsonify({"error": "Не все обязательные поля заполнены"}), 400
@@ -1180,8 +1269,9 @@ def create_task():
             priority = int(priority)
             assigned_to_id = int(assigned_to_id)
             sprint_id = int(sprint_id)
+            board_id = int(board_id) if board_id else None  # Устанавливаем в None, если board_id пустой
         except ValueError:
-            return jsonify({"error": "Поля priority, assigned_to и sprint должны быть числовыми"}), 400
+            return jsonify({"error": "Поля priority, assigned_to, sprint и board_id должны быть числовыми"}), 400
 
         assigned_user = User.query.get(assigned_to_id)
         if not assigned_user:
@@ -1197,7 +1287,7 @@ def create_task():
         # Определяем, какой тег использовать в новой задаче
         tag_to_use = selected_tag if selected_tag else new_tag
 
-        # Создаем новую задачу с указанием тэга
+        # Создаем новую задачу с указанием тэга и доски
         new_task = Task(
             task_id=unique_id,
             content=task_content_with_id,
@@ -1208,6 +1298,7 @@ def create_task():
             created_at=created_at,
             assigned_to=assigned_to_id,
             sprint_id=sprint_id,
+            board_id=board_id,  # Установка board_id (может быть None)
             tags=','.join(tag_to_use) if isinstance(tag_to_use, list) else tag_to_use
         )
         db.session.add(new_task)
@@ -1220,8 +1311,6 @@ def create_task():
     except Exception as error:
         print("Error creating task:", error)
         return jsonify({"error": str(error)}), 500
-
-
 
 @app.route('/test')
 def calendar():
@@ -1292,8 +1381,9 @@ def users():
     try:
         users = User.query.all()
         image_filename = current_user.image_file if current_user.image_file else ''
+        boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
         roles = Role.query.all()
-        return render_template('register.html', users=users, user=current_user, image_filename=image_filename, roles=roles)
+        return render_template('register.html', users=users, user=current_user, image_filename=image_filename, roles=roles, boards=boards)
     except Exception as error:
         print("Error fetching users:", error)
         return jsonify({"error": str(error)}), 500
@@ -1393,6 +1483,7 @@ def profile():
     first_day_of_month = current_date.replace(day=1)
     _, days_in_month = monthrange(current_date.year, current_date.month)
     last_day_of_month = first_day_of_month + timedelta(days=days_in_month - 1)
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
 
     # Передаем данные текущего пользователя и другие переменные в шаблон
     return render_template('profile.html',
@@ -1401,7 +1492,8 @@ def profile():
                            contribution_months=contribution_months,
                            current_date=current_date,
                            first_day_of_month=first_day_of_month,
-                           last_day_of_month=last_day_of_month)
+                           last_day_of_month=last_day_of_month,
+                           boards=boards)
 
 @app.route('/update_avatar', methods=['POST'])
 @login_required
@@ -1496,7 +1588,8 @@ def update_password():
 def show_delete_task():
     tasks = Task.query.all()
     image_filename = current_user.image_file if current_user.image_file else ''
-    return render_template('delete_task.html', tasks=tasks, user=current_user, image_filename=image_filename)
+    boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
+    return render_template('delete_task.html', tasks=tasks, user=current_user, image_filename=image_filename, boards=boards)
 
 def template_exists(template_name):
     try:

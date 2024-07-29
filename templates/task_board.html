@@ -10,6 +10,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
 </head>
     <header>
         <div class="logo">
@@ -50,15 +56,22 @@
                     <li><a href="{{ url_for('user_list') }}">Профили пользователей</a></li>
                 {% endif %}
                 <li class="menu-section">Задачи</li>
-                {% if check_permission('Просматривать список спринтов') or check_permission('root') %}
-                    <li><a href="{{ url_for('list_sprints') }}">Список спринтов</a></li>
+                {% if check_permission('root') %}
+                    <li><a href="{{ url_for('admin_boards') }}">Все доски</a></li>
                 {% endif %}
                 {% if check_permission('Доска задач') or check_permission('root') %}
-                    <li><a href="{{ url_for('task_board') }}">Доска задач</a></li>
+                    <li><a href="{{ url_for('boards') }}">Создать доску</a></li>
+                {% endif %}
+                {% if check_permission('Просматривать список спринтов') or check_permission('root') %}
+                    <li><a href="{{ url_for('list_sprints') }}">Список спринтов</a></li>
                 {% endif %}
                 {% if check_permission('Удаление задач') or check_permission('root') %}
                     <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
                 {% endif %}
+                <li class="menu-section">Доски задач</li>
+                {% for board in boards %}
+                    <li><a href="{{ url_for('task_board', board_id=board.id) }}">{{ board.name }}</a></li>
+                {% endfor %}
             {% endif %}
         </ul>
     </nav>
@@ -73,9 +86,91 @@
         margin-bottom: 50px;
         color: #e0e0e0;
     }
+
+    .ui-autocomplete {
+        max-height: 200px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        white-space: nowrap;
+        background-color: gray;
+        color: white;
+    }
+    /* Для модального окна */
+    .ui-dialog {
+        z-index: 1000; /* Значение можно изменить в зависимости от потребностей */
+        position: relative; /* или absolute, если это более подходящее значение */
+        overflow: visible;
+    }
+
+    /* Для автодополнения */
+    .ui-autocomplete {
+        z-index: 1100; /* Убедитесь, что значение больше, чем у модального окна */
+    }
+
 </style>
     <div class="container">
         <h1>Доска задач</h1>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#inviteModal">
+            Пригласить пользователя
+        </button>
+    <div class="modal fade" id="inviteModal" tabindex="-1" role="dialog" aria-labelledby="inviteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="inviteModalLabel">Пригласить пользователя</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Закрыть">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="inviteForm" action="{{ url_for('invite_user', board_id=board.id) }}" method="POST">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="usernick">Имя пользователя</label>
+                            <input type="text" class="form-control" id="usernick" name="usernick" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Пригласить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#usernick").autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: "{{ url_for('user_suggestions') }}",
+                        dataType: "json",
+                        data: {
+                            term: request.term
+                        },
+                        success: function(data) {
+                            console.log("Received data:", data); // Проверьте данные в консоли
+                            response($.map(data, function(item) {
+                                return {
+                                    label: item.label,
+                                    value: item.value
+                                };
+                            }));
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error fetching user suggestions:", error);
+                        }
+                    });
+                },
+                minLength: 2,
+                select: function(event, ui) {
+                    console.log("Selected:", ui.item);
+                }
+            });
+        });
+    </script>
         <div class="task-form">
             <h4>Создать новую задачу</h4>
             <form id="taskForm">
@@ -115,6 +210,7 @@
                     <label for="assigned_to">Исполнитель</label>
                     <select class="form-control bg-dark text-light" id="assigned_to">
                         <option value="">Не выбран</option>
+                        <!-- Add options dynamically with JS -->
                     </select>
                 </div>
                 <div class="form-group">
@@ -142,11 +238,15 @@
                         {% endfor %}
                     </select>
                 </div>
+                <input type="hidden" id="board_id" name="board_id" value="{{ board_id }}"> <!-- Передаем board_id -->
                 <button type="submit" class="btn btn-primary">Создать задачу</button>
             </form>
         </div>
 
-<form method="GET" action="{{ url_for('task_board') }}">
+
+        {% for board in boards %}
+<form method="GET" action="{{ url_for('task_board', board_id=board.id) }}">
+        {% endfor %}
     <label for="tag">Тег:</label>
     <select class="form-control bg-dark text-light" name="tag" id="tag">
         <option value="">Все</option>
@@ -759,55 +859,63 @@ document.addEventListener('DOMContentLoaded', function() {
             // Fetch users on page load
             fetchUsersAndPopulateDropdowns();
 
-            // Event listener to handle task form submission
+            document.getElementById('newTagCheckbox').addEventListener('change', function() {
+                const newTagInput = document.getElementById('newTagInput');
+                newTagInput.style.display = this.checked ? 'block' : 'none';
+            });
+
             document.getElementById('taskForm').addEventListener('submit', function(event) {
                 event.preventDefault();
 
-            const taskContent = document.getElementById('task_content').value;
-            const priority = document.getElementById('priority').value;
-            const description = document.getElementById('description').value;
-            const customer = document.getElementById('customer').value;
-            const department = document.getElementById('department').value;
-            const assignedTo = document.getElementById('assigned_to').value;
-            const sprint = document.getElementById('sprint').value;
+                const taskContent = document.getElementById('task_content').value;
+                const priority = document.getElementById('priority').value;
+                const description = document.getElementById('description').value;
+                const customer = document.getElementById('customer').value;
+                const department = document.getElementById('department').value;
+                const assignedTo = document.getElementById('assigned_to').value;
+                const sprint = document.getElementById('sprint').value;
+                const boardId = document.getElementById('board_id').value.trim(); // Убираем пробелы
 
-            // Получение значений выбранных тегов
-            let tags = document.querySelectorAll('input[name="tags"]:checked');
-            let tagValues = Array.from(tags).map(tag => tag.value);
+                let tags = document.querySelectorAll('input[name="tags"]:checked');
+                let tagValues = Array.from(tags).map(tag => tag.value);
 
-            // Получение значения нового тега (если выбрано создать новый тег)
-            let newTagValue = document.getElementById('newTagInputField').value;
+                let newTagValue = document.getElementById('newTagInputField').value;
+
+                let requestData = {
+                    task_content: taskContent,
+                    priority: priority,
+                    description: description,
+                    customer: customer,
+                    department: department,
+                    assigned_to: assignedTo,
+                    tags: tagValues,
+                    sprint: sprint,
+                    newTag: newTagValue,
+                    board_id: boardId // Добавляем board_id
+                };
+
+                console.log("Request Data:", requestData); // Для отладки
 
                 fetch('/create_task', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        task_content: taskContent,
-                        priority: priority,
-                        description: description,
-                        customer: customer,
-                        department: department,
-                        assigned_to: assignedTo,
-                        tags: tagValues,
-                        sprint: sprint,
-                        newTag: newTagValue
-                    })
-                }).then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            alert("Ошибка при создании задачи: " + data.error);
-                        } else {
-                            // Call function to add task to the 'queue' column
-                            addTaskToColumn(data.task_id, taskContent, description, 'queue');
-                            document.getElementById('taskForm').reset(); // Clear the form
-                            window.location.reload(); // Обновляем страницу после alert
-                        }
-                    })
-                    .catch(error => {
-                        alert("Ошибка при создании задачи: " + error);
-                    });
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("Ошибка при создании задачи: " + data.error);
+                    } else {
+                        addTaskToColumn(data.task_id, taskContent, description, 'queue');
+                        document.getElementById('taskForm').reset(); // Очистка формы
+                        window.location.reload(); // Обновляем страницу после alert
+                    }
+                })
+                .catch(error => {
+                    alert("Ошибка при создании задачи: " + error);
+                });
             });
 
             // Event listener to handle update task form submission

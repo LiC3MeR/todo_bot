@@ -89,12 +89,22 @@
                     <li><a href="{{ url_for('user_list') }}">Профили пользователей</a></li>
                 {% endif %}
                 <li class="menu-section">Задачи</li>
+                {% if check_permission('root') %}
+                    <li><a href="{{ url_for('admin_boards') }}">Все доски</a></li>
+                {% endif %}
                 {% if check_permission('Доска задач') or check_permission('root') %}
-                    <li><a href="{{ url_for('task_board') }}">Доска задач</a></li>
+                    <li><a href="{{ url_for('boards') }}">Создать доску</a></li>
+                {% endif %}
+                {% if check_permission('Просматривать список спринтов') or check_permission('root') %}
+                    <li><a href="{{ url_for('list_sprints') }}">Список спринтов</a></li>
                 {% endif %}
                 {% if check_permission('Удаление задач') or check_permission('root') %}
                     <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
                 {% endif %}
+                <li class="menu-section">Доски задач</li>
+                {% for board in boards %}
+                    <li><a href="{{ url_for('task_board', board_id=board.id) }}">{{ board.name }}</a></li>
+                {% endfor %}
             {% endif %}
         </ul>
     </nav>
