@@ -319,14 +319,16 @@ class Task(db.Model):
 
 class Sprint(db.Model):
     __tablename__ = 'sprints'
-    id = db.Column(db.Integer, primary_key=True)
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
-    tasks = db.relationship('Task', backref='sprint', lazy=True)
 
-    def __repr__(self):
-        return f'<Sprint {self.name}>'
+    def __init__(self, name, start_date, end_date):
+        self.name = name
+        self.start_date = start_date
+        self.end_date = end_date
 
 
 def __init__(self, usernick, username, password, role='user'):
