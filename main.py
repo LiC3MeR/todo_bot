@@ -451,7 +451,7 @@ def link_telegram():
         user.telegram_id = telegram_id
         db.session.commit()
         flash('Telegram ID successfully linked', 'success')
-        return redirect(url_for('task_board'))
+        return redirect(url_for('profile'))
 
     return render_template('link_telegram.html')
 
@@ -605,7 +605,7 @@ def login():
 
             # Проверка двухфакторной аутентификации
             if user.can('Отключение двухэтапной аутентификации'):
-                return redirect(url_for('task_board'))
+                return redirect(url_for('profile'))
 
             if user.telegram_id:
                 send_verification_code(user)  # Отправка кода подтверждения
@@ -646,7 +646,7 @@ def verify_telegram_code():
         if user and verify_code(user_id, code):  # Используйте user_id
             session.pop('pending_user_id', None)
             login_user(user)
-            return redirect(url_for('task_board'))
+            return redirect(url_for('profile'))
         else:
             flash('Invalid verification code', 'error')
 
@@ -657,7 +657,7 @@ def verify_telegram_code():
 def after_login():
     user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
     send_telegram_message(f" Пользователь {user_name} вошёл в свой аккаунт")
-    return redirect('/task_board')
+    return redirect('/profile')
 
 @app.route('/admin_panel')
 @login_required
