@@ -881,17 +881,30 @@ def add_comment(task_id):
             return jsonify({"error": str(e)}), 500
     return jsonify({"error": "Контент не может быть пустым"}), 400
 
+
 @app.route('/sprint/create', methods=['GET', 'POST'])
 @login_required
 @permission_required('Создать спринт')
 def create_sprint():
     image_filename = current_user.image_file if current_user.image_file else ''
+
     if request.method == 'POST':
         name = request.form.get('name')
         start_date = request.form.get('start_date')
         end_date = request.form.get('end_date')
 
-        sprint = Sprint(name=name, start_date=datetime.strptime(start_date, '%Y-%m-%d'), end_date=datetime.strptime(end_date, '%Y-%m-%d'))
+        if not all([name, start_date, end_date]):
+            flash('Пожалуйста, заполните все поля', 'danger')
+            return render_template('create_sprint.html', user=current_user, image_filename=image_filename)
+
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        except ValueError:
+            flash('Некорректный формат даты', 'danger')
+            return render_template('create_sprint.html', user=current_user, image_filename=image_filename)
+
+        sprint = Sprint(name=name, start_date=start_date, end_date=end_date)
         db.session.add(sprint)
         db.session.commit()
 
@@ -899,6 +912,7 @@ def create_sprint():
         return redirect(url_for('list_sprints'))
 
     return render_template('create_sprint.html', user=current_user, image_filename=image_filename)
+
 
 @app.route('/sprints')
 @login_required

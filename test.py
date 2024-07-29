@@ -23,11 +23,11 @@ class User(db.Model):
 
 class Sprint(db.Model):
     __tablename__ = 'sprints'
-    id = db.Column(db.Integer, primary_key=True)
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
-    tasks = db.relationship('Task', backref='sprint', lazy=True)
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
