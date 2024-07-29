@@ -1,0 +1,113 @@
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylemenu.css') }}">
+    <style>
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: gray;
+            color: white;
+            text-align: center;
+        }
+
+        h1 {
+            text-align: center;
+        }
+    </style>
+
+</head>
+    <header>
+        <div class="logo">
+            <img src="/static/logo.jpg" alt="Логотип">
+        </div>
+        <div id="user-info">
+            <span id="username">{{ user.display_name() }}</span>
+            <img id="user-avatar" src="{{ url_for('static', filename=image_filename) }}" alt="Аватар пользователя">
+            <div id="user-menu" class="user-menu">
+                <button id="profile-button">Профиль</button>
+                <button id="logout-button">Выйти</button>
+            </div>
+        </div>
+    </header>
+    <nav class="menu">
+        <div class="menu-toggle">☰</div>
+        <ul>
+            {% if current_user.is_authenticated %}
+                <li class="menu-section">Администрирование</li>
+                {% if check_permission('Пользователи') or check_permission('root') %}
+                    <li><a href="{{ url_for('users') }}">Пользователи</a></li>
+                {% endif %}
+                {% if check_permission('Роли') or check_permission('root') %}
+                    <li><a href="{{ url_for('role_management') }}">Роли</a></li>
+                {% endif %}
+                {% if check_permission('Возможность просмотреть профиль пользователя') or check_permission('root') %}
+                    <li><a href="{{ url_for('user_list') }}">Профили пользователей</a></li>
+                {% endif %}
+                <li class="menu-section">Задачи</li>
+                {% if check_permission('Доска задач') or check_permission('root') %}
+                    <li><a href="{{ url_for('task_board') }}">Доска задач</a></li>
+                {% endif %}
+                {% if check_permission('Удаление задач') or check_permission('root') %}
+                    <li><a href="{{ url_for('show_delete_task') }}">Удаление задач</a></li>
+                {% endif %}
+            {% endif %}
+        </ul>
+    </nav>
+<h1>Спринт: {{ sprint.name }}</h1></br>
+<form method="POST" action="{{ url_for('view_sprint', sprint_id=sprint.id) }}">
+    <input type="text" name="name" value="{{ sprint.name }}" required>
+    <input type="date" name="start_date" value="{{ sprint.start_date.strftime('%Y-%m-%d') }}" required>
+    <input type="date" name="end_date" value="{{ sprint.end_date.strftime('%Y-%m-%d') }}" required>
+    <button class="btn btn-secondary close-update-form" type="submit">Сохранить</button>
+</form>
+<button class="btn btn-secondary close-update-form" onclick="window.location.href='{{ url_for('list_sprints') }}'">Вернуться к списку спринтов</button>
+
+    <script>
+            const userAvatar = document.getElementById('user-avatar');
+            const userMenu = document.getElementById('user-menu');
+            const logoutButton = document.getElementById('logout-button');
+            const profileButton = document.getElementById('profile-button');
+
+            // Показать/скрыть меню при клике на аватарку
+            userAvatar.addEventListener('click', function() {
+                userMenu.classList.toggle('show');
+            });
+
+            // Скрыть меню при клике вне его области
+            document.addEventListener('click', function(event) {
+                if (!userMenu.contains(event.target) && event.target !== userAvatar) {
+                    userMenu.classList.remove('show');
+                }
+            });
+
+            // Обработчик для кнопки "Выйти"
+            logoutButton.addEventListener('click', function() {
+                if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                    window.location.href = '/logout';
+                }
+            });
+
+            // Обработчик для кнопки "Профиль"
+            profileButton.addEventListener('click', function() {
+                window.location.href = '{{ url_for("profile") }}';
+            });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuToggle = document.querySelector('.menu-toggle');
+            var menu = document.querySelector('.menu');
+            if (!menuToggle || !menu) {
+                console.log('Menu toggle or menu element not found.');
+            } else {
+                console.log('Menu toggle and menu elements are found.');
+                menuToggle.addEventListener('click', function() {
+                    console.log('Menu toggle clicked.');
+                    menu.classList.toggle('open');
+                });
+            }
+        });
+    </script>

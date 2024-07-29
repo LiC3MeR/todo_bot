@@ -2,7 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///C:\Users\User\todo_bot\instance\base.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///C:\Users\New\todo_bot\instance\tasks.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -21,6 +21,13 @@ class User(db.Model):
 
     comments = db.relationship('Comment', back_populates='user', lazy=True)
 
+class Sprint(db.Model):
+    __tablename__ = 'sprints'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+    tasks = db.relationship('Task', backref='sprint', lazy=True)
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,6 +44,7 @@ class Task(db.Model):
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
     duration = db.Column(db.Integer)
     tags = db.Column(db.String(30), nullable=True)
+    sprint_id = db.Column(db.Integer, db.ForeignKey('sprints.id'), nullable=True)
 
     comments = db.relationship('Comment', backref='task_related', lazy=True)
 

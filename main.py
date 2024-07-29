@@ -260,6 +260,7 @@ class Task(db.Model):
     user = db.relationship('User', backref=db.backref('tasks_assigned', lazy=True))
     duration = db.Column(db.Integer)
     tags = db.Column(db.String(30), nullable=True)
+    sprint_id = db.Column(db.Integer, db.ForeignKey('sprints.id'), nullable=True)
 
     comments = db.relationship('Comment', backref='task_related', lazy=True)
 
@@ -314,6 +315,19 @@ class Task(db.Model):
     @classmethod
     def load_user(cls, user_id):
         return db.session.query(User).get(int(user_id))
+
+
+class Sprint(db.Model):
+    __tablename__ = 'sprints'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+    tasks = db.relationship('Task', backref='sprint', lazy=True)
+
+    def __repr__(self):
+        return f'<Sprint {self.name}>'
+
 
 def __init__(self, usernick, username, password, role='user'):
     self.usernick = usernick
@@ -577,8 +591,6 @@ def login():
             flash('Неправильное имя пользователя или пароль', 'error')
 
     return render_template('login.html')
-
-
 
 def verify_code(user_id, code):
     verification = VerificationCode.query.filter_by(user_id=user_id, code=code).first()
@@ -867,39 +879,101 @@ def add_comment(task_id):
             return jsonify({"error": str(e)}), 500
     return jsonify({"error": "Контент не может быть пустым"}), 400
 
+@app.route('/sprint/create', methods=['GET', 'POST'])
+@login_required
+@permission_required('Создать спринт')
+def create_sprint():
+    image_filename = current_user.image_file if current_user.image_file else ''
+    if request.method == 'POST':
+        name = request.form.get('name')
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+
+        sprint = Sprint(name=name, start_date=datetime.strptime(start_date, '%Y-%m-%d'), end_date=datetime.strptime(end_date, '%Y-%m-%d'))
+        db.session.add(sprint)
+        db.session.commit()
+
+        flash('Спринт успешно создан!', 'success')
+        return redirect(url_for('list_sprints'))
+
+    return render_template('create_sprint.html', user=current_user, image_filename=image_filename)
+
+@app.route('/sprints')
+@login_required
+@permission_required('Просматривать список спринтов')
+def list_sprints():
+    image_filename = current_user.image_file if current_user.image_file else ''
+    sprints = Sprint.query.all()
+    return render_template('list_sprints.html', sprints=sprints, user=current_user, image_filename=image_filename)
+
+@app.route('/sprint/<int:sprint_id>', methods=['GET', 'POST'])
+@login_required
+@permission_required('Редактировать спринт')
+def view_sprint(sprint_id):
+    image_filename = current_user.image_file if current_user.image_file else ''
+    sprint = Sprint.query.get_or_404(sprint_id)
+
+    if request.method == 'POST':
+        sprint.name = request.form.get('name')
+        sprint.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
+        sprint.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
+        db.session.commit()
+
+        flash('Спринт успешно обновлен!', 'success')
+        return redirect(url_for('list_sprints'))
+
+    return render_template('view_sprint.html', sprint=sprint, user=current_user, image_filename=image_filename)
+
+
+def get_current_sprint():
+    now = datetime.now()
+    return Sprint.query.filter(Sprint.start_date <= now, Sprint.end_date >= now).first()
+
 @app.route('/task_board', methods=['GET', 'POST'])
 @login_required
 @permission_required('Доска задач')
 def task_board():
     try:
-        # Получаем параметры фильтрации из запроса
-        filter_status = request.args.get('status')  # Пример: 'В очереди', 'В работе', 'Готово'
-        filter_tag = request.args.get('tag')        # Пример: 'Баг', 'Улучшение'
-        filter_user = request.args.get('user')      # Пример: 'usernick1', 'usernick2'
+        filter_status = request.args.get('status')
+        filter_tag = request.args.get('tag')
+        filter_user = request.args.get('user')
 
-        # Получаем все задачи из базы данных
-        query = Task.query
+        current_sprint = Sprint.query.filter(Sprint.start_date <= datetime.now(), Sprint.end_date >= datetime.now()).first()
 
-        # Применяем фильтр по статусу, если он задан
-        if filter_status in ['В очереди', 'В работе', 'Готово']:
-            status_id = next(key for key, value in section_status_mapping.items() if value == filter_status)
-            query = query.filter_by(status=status_id)
+        if not current_sprint:
+            return render_template(
+                'task_board.html',
+                tasks_by_section={},
+                user=current_user,
+                image_filename=current_user.image_file if current_user.image_file else '',
+                task_id=None,
+                existing_tags=[],
+                selected_status=filter_status,
+                selected_tag=filter_tag,
+                selected_user=filter_user,
+                users_list=[],
+                sprints=[]
+            )
 
-        # Применяем фильтр по тегу, если он задан
-        if filter_tag:
-            query = query.filter(Task.tags.contains(filter_tag))
-
-        # Применяем фильтр по пользователю, если он задан
-        if filter_user:
-            query = query.join(User).filter(User.usernick == filter_user)
-
-        tasks = query.all()
+        query = Task.query.filter_by(sprint_id=current_sprint.id)
 
         section_status_mapping = {
             1: 'В очереди',
             2: 'В работе',
             3: 'Готово'
         }
+        if filter_status in section_status_mapping.values():
+            status_id = next(key for key, value in section_status_mapping.items() if value == filter_status)
+            query = query.filter_by(status=status_id)
+
+        if filter_tag:
+            query = query.filter(Task.tags.contains(filter_tag))
+
+        if filter_user:
+            query = query.join(User).filter(User.usernick == filter_user)
+
+        tasks = query.all()
+
         tasks_by_section = {
             'В очереди': [],
             'В работе': [],
@@ -913,11 +987,12 @@ def task_board():
 
         image_filename = current_user.image_file if current_user.image_file else ''
         existing_tags = db.session.query(Task.tags.distinct()).all()
-        tags_list = [tag[0] for tag in existing_tags if tag[0]]  # Фильтруем пустые значения, если они есть
+        tags_list = [tag[0] for tag in existing_tags if tag[0]]
 
-        # Получаем список пользователей для фильтра
         users_list = db.session.query(User.usernick.distinct()).all()
         users_list = [user[0] for user in users_list if user[0]]
+
+        sprints = Sprint.query.all()
 
         return render_template(
             'task_board.html',
@@ -929,14 +1004,12 @@ def task_board():
             selected_status=filter_status,
             selected_tag=filter_tag,
             selected_user=filter_user,
-            users_list=users_list
+            users_list=users_list,
+            sprints=sprints
         )
-
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
-
-
 
 @app.route('/manage_roles', methods=['GET', 'POST'])
 @login_required
@@ -1078,15 +1151,17 @@ def create_task():
         assigned_to_id = data.get('assigned_to')
         selected_tag = data.get('tags')  # Выбранный тег из списка
         new_tag = data.get('newTag')  # Новый тег, введенный пользователем
+        sprint_id = data.get('sprint')
 
-        if not all([task_content, priority, description, customer, department, assigned_to_id]):
+        if not all([task_content, priority, description, customer, department, assigned_to_id, sprint_id]):
             return jsonify({"error": "Не все обязательные поля заполнены"}), 400
 
         try:
             priority = int(priority)
             assigned_to_id = int(assigned_to_id)
+            sprint_id = int(sprint_id)
         except ValueError:
-            return jsonify({"error": "Поля priority и assigned_to должны быть числовыми"}), 400
+            return jsonify({"error": "Поля priority, assigned_to и sprint должны быть числовыми"}), 400
 
         assigned_user = User.query.get(assigned_to_id)
         if not assigned_user:
@@ -1095,7 +1170,6 @@ def create_task():
         task_description = f"{description}\n\nЗаказчик: {customer}\n\nОтдел: {department}"
         unique_id = generate_unique_id(department)
         task_content_with_id = f"{unique_id}: {task_content}"
-
 
         gmt_plus_5 = pytz.timezone('Etc/GMT-5')
         created_at = datetime.now(gmt_plus_5)
@@ -1113,6 +1187,7 @@ def create_task():
             status=1,  # По умолчанию "В очереди"
             created_at=created_at,
             assigned_to=assigned_to_id,
+            sprint_id=sprint_id,
             tags=','.join(tag_to_use) if isinstance(tag_to_use, list) else tag_to_use
         )
         db.session.add(new_task)
@@ -1125,6 +1200,7 @@ def create_task():
     except Exception as error:
         print("Error creating task:", error)
         return jsonify({"error": str(error)}), 500
+
 
 
 @app.route('/test')

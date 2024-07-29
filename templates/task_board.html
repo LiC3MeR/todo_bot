@@ -122,14 +122,22 @@
                             <label class="form-check-label" for="tag{{ loop.index }}">{{ tag }}</label>
                         </div>
                     {% endfor %}
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="newTagCheckbox" name="newTagCheckbox">
-                    <label class="form-check-label" for="newTagCheckbox">Создать новый тэг</label>
-                </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="newTagCheckbox" name="newTagCheckbox">
+                        <label class="form-check-label" for="newTagCheckbox">Создать новый тэг</label>
+                    </div>
                 </div>
                 <div class="form-group" id="newTagInput" style="display: none;">
                     <label for="newTagInput">Новый тэг</label>
                     <input type="text" class="form-control bg-dark text-light" id="newTagInputField" name="newTagInput">
+                </div>
+                <div class="form-group">
+                    <label for="sprint">Спринт</label>
+                    <select class="form-control bg-dark text-light" id="sprint" required>
+                        {% for sprint in sprints %}
+                            <option value="{{ sprint.id }}">{{ sprint.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <button type="submit" class="btn btn-primary">Создать задачу</button>
             </form>
@@ -758,6 +766,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const customer = document.getElementById('customer').value;
             const department = document.getElementById('department').value;
             const assignedTo = document.getElementById('assigned_to').value;
+            const sprint = document.getElementById('sprint').value;
 
             // Получение значений выбранных тегов
             let tags = document.querySelectorAll('input[name="tags"]:checked');
@@ -779,6 +788,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         department: department,
                         assigned_to: assignedTo,
                         tags: tagValues,
+                        sprint: sprint,
                         newTag: newTagValue
                     })
                 }).then(response => response.json())
