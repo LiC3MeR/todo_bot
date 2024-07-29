@@ -242,8 +242,8 @@
                 <button type="submit" class="btn btn-primary">Создать задачу</button>
             </form>
         </div>
-
-
+</br></br>
+            <h1>{{ current_sprint.name if current_sprint else 'Нет текущего спринта' }}</h1>
         {% for board in boards %}
 <form method="GET" action="{{ url_for('task_board', board_id=board.id) }}">
         {% endfor %}

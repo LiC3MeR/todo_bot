@@ -1054,12 +1054,18 @@ def task_board(board_id):
         return abort(403)
 
     try:
+        # Определение текущего спринта
+        current_sprint = get_current_sprint()
+
         filter_status = request.args.get('status')
         filter_tag = request.args.get('tag')
         filter_user = request.args.get('user')
 
-        # Фильтрация задач по доске
+        # Фильтрация задач по доске и текущему спринту
         query = Task.query.filter_by(board_id=board_id)
+
+        if current_sprint:
+            query = query.filter(Task.sprint_id == current_sprint.id)
 
         section_status_mapping = {
             1: 'В очереди',
@@ -1111,12 +1117,14 @@ def task_board(board_id):
             users_list=users_list,
             sprints=sprints,
             board_id=board_id,
-            boards = boards,
-            board = board
+            boards=boards,
+            board=board,
+            current_sprint=current_sprint
         )
     except Exception as error:
         print("Error fetching tasks:", error)
         return jsonify({"error": str(error)})
+
 
 @app.route('/manage_roles', methods=['GET', 'POST'])
 @login_required
