@@ -183,7 +183,7 @@ def role_required(role_id_required):
 
     return decorator
 
-role_id = int(os.getenv('ROLE_ID'))
+ROLE_ID = int(os.getenv('ROLE_ID'))
 
 def permission_required(permission_name, role_id=None):
     def decorator(func):
@@ -194,10 +194,14 @@ def permission_required(permission_name, role_id=None):
 
             # Проверяем, есть ли у пользователя разрешение
             if role_id is not None:
+                # Если текущая роль совпадает с ролью из .env, предоставляем все разрешения
+                if current_user.role_id == ROLE_ID:
+                    return func(*args, **kwargs)
+
                 if not (current_user.can(permission_name) or current_user.role_id == role_id):
                     abort(403)  # 403 Forbidden
             else:
-                if not current_user.can(permission_name):
+                if not current_user.can(permission_name) and current_user.role_id != ROLE_ID:
                     abort(403)  # 403 Forbidden
 
             return func(*args, **kwargs)
