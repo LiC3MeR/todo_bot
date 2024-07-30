@@ -601,13 +601,11 @@
                     }
 
                     const data = await response.json();
-                    alert("Таймер запущен и задача успешно переведена в статус 'В работе'");
                     const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
                     moveTask(taskElement, 'in-progress');
                     window.location.reload(); // Обновляем страницу после alert
                 } catch (error) {
                     console.error("Ошибка при старте задачи:", error);
-                    alert("Ошибка при старте задачи: " + error.message);
                 }
             }
 
@@ -627,13 +625,11 @@
 
                     const data = await response.json();
                     console.log("Задача успешно переведена в статус 'Готово'");
-                    alert("Таймер завершён и задача успешно переведена в статус 'Готово'");
                     const taskElement = document.querySelector(`.task[data-id="${taskId}"]`);
                     moveTask(taskElement, 'done');
                     window.location.reload(); // Обновляем страницу после alert
                 } catch (error) {
                     console.error("Ошибка при завершении задачи:", error);
-                    alert("Ошибка при завершении задачи: " + error.message);
                 }
             }
 
@@ -718,7 +714,6 @@
                         }
 
                         const result = await response.json();
-                        alert(result.message); // Показать сообщение об успешном выполнении
                 });
             });
         });
@@ -948,7 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                                 // Close the update form
                                 this.style.display = 'none';
-                                alert("Задача успешно обновлена!");
+                                window.location.reload();
                             }
                         })
                         .catch(error => {
@@ -1017,12 +1012,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             return response.json();
                         })
                         .then(data => {
-                            console.log("Задача успешно переведена в статус 'В работе'");
-                            // Дополнительные действия при необходимости
                         })
                         .catch(error => {
                             console.error("Ошибка при старте задачи:", error);
-                            alert("Ошибка при старте задачи: " + error.message);
                         });
                     } else if (newStatus === 'Готово') {
                         fetch(`/end_task/${taskId}`, {
@@ -1038,18 +1030,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             return response.json();
                         })
                         .then(data => {
-                            console.log("Задача успешно переведена в статус 'Готово'");
-                            // Дополнительные действия при необходимости
                         })
                         .catch(error => {
                             console.error("Ошибка при завершении задачи:", error);
-                            alert("Ошибка при завершении задачи: " + error.message);
                         });
                     }
                 })
                 .catch(error => {
                     console.error("Ошибка при обновлении статуса задачи:", error);
-                    alert("Ошибка при обновлении статуса задачи: " + error.message);
                 });
             }
 

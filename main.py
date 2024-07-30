@@ -553,6 +553,7 @@ def update_task(id):
 
         db.session.commit()
 
+        flash("Задача успешно обновлена")
         return jsonify({"message": "Задача успешно обновлена"})
     except Exception as error:
         print("Error updating task:", error)
@@ -756,6 +757,7 @@ def start_task(task_id):
         unique_id = task.task_id
         user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
         send_telegram_message(f" Пользователь {user_name} взял задачу {unique_id} в работу")
+        flash('Таймер запущен и задача успешно переведена в статус "В работе"')
         return jsonify("OK"), 200
 
     except Exception as error:
@@ -775,6 +777,7 @@ def end_task(task_id):
         user_name = current_user.usernick if current_user.is_authenticated else 'Неизвестный пользователь'
         formatted_duration = format_duration(task.duration)
         send_telegram_message(f"Пользователь {user_name} завершил выполнение задачи {unique_id} за {formatted_duration}")
+        flash('Таймер завершён и задача успешно переведена в статус "Готово"')
         return jsonify("OK"), 200
 
     except Exception as error:
@@ -1211,7 +1214,6 @@ def get_role_permissions(role_id):
 @app.route('/select_role', methods=['POST'])
 def select_role():
     role_id = request.form.get('role_id')
-    # Handle role selection logic here
     return redirect(url_for('role_management'))
 
 @app.route('/create_permission', methods=['GET', 'POST'])
