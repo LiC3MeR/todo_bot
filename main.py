@@ -1048,9 +1048,10 @@ def admin_boards():
 def task_board(board_id):
     board = Board.query.get_or_404(board_id)
     boards = Board.query.join(BoardUser).filter(BoardUser.user_id == current_user.id).all()
+    ROLE_ID = int(os.getenv('ROLE_ID'))
 
     # Проверка, имеет ли текущий пользователь доступ к этой доске
-    if not (current_user.id == board.creator_id or BoardUser.query.filter_by(board_id=board_id, user_id=current_user.id).first()):
+    if not (current_user.id == board.creator_id or current_user.role_id == ROLE_ID or BoardUser.query.filter_by(board_id=board_id, user_id=current_user.id).first()):
         return abort(403)
 
     try:
