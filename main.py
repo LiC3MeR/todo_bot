@@ -20,7 +20,6 @@ from sqlalchemy import Column, Integer, DateTime, LargeBinary, func, String
 from functools import wraps
 from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity
 from jinja2 import TemplateNotFound
-from models import User, Task
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
 import logging
@@ -575,23 +574,32 @@ def reg():
 @app.route('/create_user', methods=['POST'])
 def create_user():
     if request.method == 'POST':
-        usernick = request.form['usernick']
-        username = request.form['username']
-        password = request.form['password']
-        role = request.form.get('role')
+        if request.is_json:
+            data = request.get_json()
+            usernick = data.get('usernick')
+            username = data.get('username')
+            password = data.get('password')
+            role = data.get('role')
+        else:
+            usernick = request.form.get('usernick')
+            username = request.form.get('username')
+            password = request.form.get('password')
+            role = request.form.get('role')
+
+        if not (username and password and role):
+            return jsonify({'error': 'Не все поля были заполнены'}), 400
+
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash('Пользователь с таким именем уже существует', 'error')
-            return redirect(url_for('users'))
-        if not (username and password and role):
-            return jsonify({'error': 'Не все поля были заполнены'}), 400
+
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, usernick=usernick, password=hashed_password, role_id=role)
         db.session.add(new_user)
         db.session.commit()
+
         flash('Пользователь успешно создан', 'success')
         return redirect(url_for('users'))
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

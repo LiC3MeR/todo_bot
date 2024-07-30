@@ -1,13 +1,19 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///C:\Users\New\todo_bot\instance\tasks.db'
+
+load_dotenv()
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('CREATE_BASE')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     usernick = db.Column(db.String(50), unique=True, nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -15,9 +21,12 @@ class User(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     avatar_data = db.Column(db.LargeBinary)
     image_file = db.Column(db.String(255), nullable=False, default='logo.jpg')
+    telegram_id = db.Column(db.String(80), unique=True)
+    is_verified = db.Column(db.Boolean, default=False)
 
+    # Define relationship with Role
     role = db.relationship('Role', backref=db.backref('users', lazy=True))
-    tasks = db.relationship('Task', backref='assigned_user', lazy=True)  # Added relationship
+    tasks = db.relationship('Task', backref='assigned_user', lazy=True)
 
     comments = db.relationship('Comment', back_populates='user', lazy=True)
 
@@ -45,8 +54,10 @@ class Task(db.Model):
     duration = db.Column(db.Integer)
     tags = db.Column(db.String(30), nullable=True)
     sprint_id = db.Column(db.Integer, db.ForeignKey('sprints.id'), nullable=True)
+    board_id = db.Column(db.Integer, db.ForeignKey('board.id'))  # Добавьте это поле
 
     comments = db.relationship('Comment', backref='task_related', lazy=True)
+    board = db.relationship('Board', backref='tasks')
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -102,3 +113,44 @@ class BoardUser(db.Model):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
+        # Permissions
+        permissions = [
+            'Меню', 'Админ страница', 'Главная', 'Доска задач', 'Роли',
+            'Пользователи', 'Профиль', 'Удаление задач', 'root',
+            'Отображать название организации перед именем',
+            'Возможность просмотреть профиль пользователя',
+            'Отключение двухэтапной аутентификации', 'Создать спринт',
+            'Просматривать список спринтов', 'Редактировать спринт'
+        ]
+
+        for permission_name in permissions:
+            permission = Permission.query.filter_by(name=permission_name).first()
+            if not permission:
+                new_permission = Permission(name=permission_name)
+                db.session.add(new_permission)
+
+        db.session.commit()
+
+        # Roles
+        roles = ['ROOT', 'admin', 'user']
+
+        for role_name in roles:
+            role = Role.query.filter_by(name=role_name).first()
+            if not role:
+                new_role = Role(name=role_name)
+                db.session.add(new_role)
+
+        db.session.commit()
+
+        # Assign permissions to roles
+        root_role = Role.query.filter_by(name='ROOT').first()
+        all_permissions = Permission.query.all()
+
+        for permission in all_permissions:
+            if permission not in root_role.permissions:
+                root_role.permissions.append(permission)
+
+        db.session.commit()
+
+        print("Database setup complete with initial permissions and roles.")
