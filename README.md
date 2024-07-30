@@ -53,6 +53,8 @@
    PROD_DATABASE_URI=linkdatabase
    NLU_DATABASE_URI=linkdatabase
    CAL_DATABASE_URI=linkdatabase
+   ROLE_ID=1
+   CREATE_BASE=linkdatabase
     ```
 
 5. Запустите приложение в нужном режиме:
@@ -61,9 +63,9 @@
     python3 main.py dev/prod
     ```
 
-6. Создание базы (таблиц, доступов)
+6. Создание базы (таблиц, доступов) Файл base.py создаст базу данных в пути который прописан в .env `CREATE_BASE`
    ```bash
-    python3 test.py
+    python3 base.py
    ```
 
 7. Откройте Postman и создайте пользователя через маршрут `http://127.0.0.1/create_user` с данными
